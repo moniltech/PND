@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "erudite-imprint-273205",
+  "private_key_id": "96d6021e2c06a66628bf360eb20e47ca8e809c25",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC9iT55jc2xKzib\nOyx0ufQA8vlDs4S9S/txzSbjOyloLD0LHv/Y9rihsn99I3YuUrZiFqR5UpzyDo+x\nHUKTsapyMjYADzcoVKbGwaQS3oeVZanYn22/K99mFOLTqYLcK76Hq9o+xT+Hxe4u\nGJ1OI6KjJMtDCaGtDqeQXOFMvhFu8lmuJmHQngEMMog0ZTH2KUIpCjid5+ibqbXc\nEb5ui09TOon/XMMQgE3QJkbj61iHa/oM2lmtkDgKQaR6nDMbB4eX7Yz39hUADiBf\naeZqAXTgy6FdkPQPXMNQBkZ+D2km2ECmyPGT8nsePdhKoqDNBfK0NOX5tWLg4EXl\nag/kNAlFAgMBAAECggEAGyXMUAbSnnzNV9aq8HEuFPC4aU0ORzrZ4hv7ZPK1ZJlp\niO1AwifcnDR/9EGfDNWGEBikKEh/+F/Djx/cyGDbRA4TFAEZ6mntlWxo/tbm3qw4\nHrH/OzGihvGY565Q8w5E9RPVZ8ZC6kScb/fQmD+cbPe5MXnwsWP29kOHdcGHp7dJ\nhqVGT8i1e9fy2qHiFRjauKK3alv6ISmfjKTIbrHf1/HX1IsQS7ALDihXaRV8vU9B\n+3KS2B+0AwfyJv6XhJaDOvE2at6zxSz5lYko3SceSMHm7ZrLGxakCAxHwtbEwDd5\no1AQjY526xFtkKOPI0I+W9AAp4hBbfwV4K635KmVhQKBgQDr/Mxc83xoZSrBBEl/\n0+QMXK8lanHHxZ8zXqvO1R2XrbpO5YjH0UAyFGa2i8e06BbnP7IU5QHkIwMjSQ/M\nmKqVoMfd5KGSg/OuR4C4JY5JYkINjAiGF7ruQjync8RotLRCb9SZKjFhgh6fkz3X\nJZis8hllr0j+4uBAd0smBjIZfwKBgQDNnADXbWzw3I2U4glLkLkC0GFKpHcD0Kzd\nydT1Cmg4l6DMqsDJWLaHgYMkMz5J2WvWYA4ba6BLz5LL8nLVM00o59Xuc+xlXKN+\nKS5Nwft2VNV0vfyWfxIUXC91jn304g7HkV5Tu5GwU4rYjejz5yaKPHBNttu+Anxi\nWfNfQwJXOwKBgFGyEo2bPVZmr4ZilY9LK4ecDoZFc15Va+e8vn28CaKY4gauL8v9\nBNxRc71+ZoSaVFN6GYxiO2VfOZbdlDqgH23tW0PWAplWVOXgmw8k8T02ZueJsum5\nDV2uUJEn4rbc2Aqn7FGZ6b537WIQ9zekLFay+VfadsrGgBvRMJLZUj7BAoGACIIk\nJsYIdA8sbLTN3aqnfU5SOFyF8Ep6XNM1VM6RcYYUyWNnhu184C6j1qOoODYfGEfx\nTYEuqPR2BqqJxfjRgJfXan6xkaA7w8TAfcdBOKxaCPKzuSaZAO6vqBW1cKTKJ8gE\nN0LTzJAodr2oni86kQ3fN9gRT9Oaghdm0tJbDnECgYB0y0chn5yVwoZ9lDyfR79i\nGmrJ7BdJeZIgoybofO7ExnptIXKr/w6AxdEmz9tlXmh1N4G+fWugs7T21YkuXqog\nnAxfMm7Uz6xayizbC+AQio+iMWEBzabdKOIsLmbKUZjtTa0mkdMOT3hifSPkgahB\nE8l+HXSWsKFMFlbyByPJJA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-ezaym@erudite-imprint-273205.iam.gserviceaccount.com",
+  "client_id": "111026226431722674290",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-ezaym%40erudite-imprint-273205.iam.gserviceaccount.com"
+}
