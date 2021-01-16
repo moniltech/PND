@@ -395,6 +395,7 @@ router.post("/settings", async function (req, res, next) {
 router.post("/orders", async function (req, res, next) {
     try {
         let newdataset = [];
+        let multiOrderDataSet = [];
         let mysort = { dateTime: -1 };
 
         let cancelledOrders = await orderSchema
@@ -428,7 +429,7 @@ router.post("/orders", async function (req, res, next) {
                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
             )
             .populate("customerId")
-            .sort(mysort);;
+            .sort(mysort);
 
         // let cancelOrders = await requestSchema
         //     .find({
@@ -475,6 +476,98 @@ router.post("/orders", async function (req, res, next) {
     }
     // const used = process.memoryUsage().heapUsed / 1024 / 1024;
     // console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
+});
+
+function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+}
+
+router.post("/getMultipleDeliveryOrder",async function(req,res,next){
+    try {
+        let cancelledOrders = await orderSchema
+            .find({ status: "Order Cancelled", isActive: false });
+        
+        let pendingOrders = await orderSchema
+            .find({ status: "Order Processing" });
+
+        let runningOrders = await orderSchema.find({
+            $or: [
+                { status: "Order Processing" },
+                { status: "Order Picked" },
+                { status: "Order Assigned" },
+            ],
+        });
+
+        let pendingMultiOrder = [];
+        let cancelMultiOrder = [];
+        let runningMultiOrder = [];
+
+        for(let i=0;i<cancelledOrders.length;i++){
+            if(cancelledOrders[i].multiOrderNo){
+                // console.log(cancelledOrders[i].orderNo);
+                // console.log(cancelledOrders[i].multiOrderNo);
+                let multiDeliveryOrderList = await orderSchema.find({ orderNo: cancelledOrders[i].orderNo })
+                                                    .populate(
+                                                        "courierId",
+                                                        "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                                                    )
+                                                    .populate("customerId")
+                                                    .sort({ dateTime: -1 });
+                                                    cancelMultiOrder.push(multiDeliveryOrderList);
+            }
+        }
+
+        for(let i=0;i<pendingOrders.length;i++){
+            if(pendingOrders[i].multiOrderNo){
+                // console.log(pendingOrders[i].orderNo);
+                // console.log(pendingOrders[i].multiOrderNo);
+                let multiDeliveryOrderList = await orderSchema.find({ orderNo: pendingOrders[i].orderNo })
+                                                    .populate(
+                                                        "courierId",
+                                                        "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                                                    )
+                                                    .populate("customerId")
+                                                    .sort({ dateTime: -1 });
+
+                pendingMultiOrder.push(multiDeliveryOrderList);
+            }
+        }
+
+        for(let i=0;i<runningOrders.length;i++){
+            if(runningOrders[i].multiOrderNo){
+                // console.log(runningOrders[i].orderNo);
+                // console.log(runningOrders[i].multiOrderNo);
+                let multiDeliveryOrderList = await orderSchema.find({ orderNo: runningOrders[i].orderNo })
+                                                .populate(
+                                                    "courierId",
+                                                    "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                                                )
+                                                .populate("customerId")
+                                                .sort({ dateTime: -1 });
+                                                
+                runningMultiOrder.push(multiDeliveryOrderList);
+            }
+        }
+
+        let multiOrderDataSet = {
+            RunningOrder: runningMultiOrder,
+            PendingOrder: pendingMultiOrder,
+            CancelOrder: cancelMultiOrder,
+        };
+
+        if(multiOrderDataSet){
+            res.status(200).json({  IsSuccess: true,
+                                    RunningOrderCount: runningMultiOrder.length,
+                                    PendingOrderCount: pendingMultiOrder.length,
+                                    CancelOrderCount: cancelMultiOrder.length, 
+                                    Data: multiOrderDataSet, 
+                                    Message: "Orders Found" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Orders Not Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
 });
 
 //After order Changed Delivery Boy
