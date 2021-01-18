@@ -3119,8 +3119,8 @@ function diff_minutes(dt2, dt1)
 {
     dt2 = new Date(dt2);
     dt1 = new Date(dt1);
-    console.log(dt1);
-    console.log(dt2);
+    // console.log(dt1);
+    // console.log(dt2);
     var diff =(dt2.getTime() - dt1.getTime()) / 1000;
     diff /= 60;
     return Math.round(diff);
@@ -3129,7 +3129,7 @@ function diff_minutes(dt2, dt1)
 }
 
 router.post("/cancelOrderV1", async function(req,res,next){
-    const { orderNo , customerId } = req.body;
+    const { orderNo , customerId , currentTime } = req.body;
     try {
         let orderIs = await orderSchema.find({ $and: [ { orderNo: orderNo }, { customerId: customerId } ] });
         console.log(orderIs.length);
@@ -3152,16 +3152,16 @@ router.post("/cancelOrderV1", async function(req,res,next){
                                 .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
                                 // .split(",")[1];
 
-            let currentTimeIs = moment()
-                                .tz("Asia/Calcutta")
-                                .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
-                                // .split(",")[1];
+            // let currentTimeIs = moment()
+            //                     .tz("Asia/Calcutta")
+            //                     .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+            //                     // .split(",")[1];
 
             console.log(scheduleTimeOf);
-            console.log(currentTimeIs);
+            console.log(currentTime);
 
 
-            let diff = diff_minutes(scheduleTimeOf,currentTimeIs);
+            let diff = diff_minutes(scheduleTimeOf,currentTime);
             console.log(diff);
 
             if(diff > 15){
