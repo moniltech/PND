@@ -3145,11 +3145,12 @@ router.post("/cancelOrderV1", async function(req,res,next){
             let month = Number(dateList[1]);
             
             month = month - 1;
-            let scheduleTimeOf = new Date(Number(dateList[0]),month,Number(dateList[2]),timeList[0],timeList[1]);
+            // let scheduleTimeOf = new Date(Number(dateList[0]),month,Number(dateList[2]),timeList[0],timeList[1]);
+            let scheduleTimeOf = scheduleDate + "T" + timeList[0] + ":" + timeList[1] + ":00.00Z"; 
             console.log(scheduleTimeOf);
-            scheduleTimeOf = moment(scheduleTimeOf)
-                                .tz("Asia/Calcutta")
-                                .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+            // scheduleTimeOf = moment(scheduleTimeOf)
+            //                     .tz("Asia/Calcutta")
+            //                     .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
                                 // .split(",")[1];
 
             // let currentTimeIs = moment()
