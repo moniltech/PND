@@ -3149,108 +3149,36 @@ router.post("/cancelOrderV1", async function(req,res,next){
             console.log(scheduleTimeOf);
             scheduleTimeOf = moment(scheduleTimeOf)
                                 .tz("Asia/Calcutta")
-                                .format("DD/MM/YYYY, h:mm:ss a")
+                                .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
                                 // .split(",")[1];
 
             let currentTimeIs = moment()
                                 .tz("Asia/Calcutta")
-                                .format("DD/MM/YYYY, h:mm:ss a")
+                                .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
                                 // .split(",")[1];
 
             console.log(scheduleTimeOf);
             console.log(currentTimeIs);
 
-            var startTime = moment(currentTimeIs, "HH:mm:ss a");
-            var endTime = moment(scheduleTimeOf, "HH:mm:ss a");
 
-            // calculate total duration
-            var duration = moment.duration(endTime.diff(startTime));
+            let diff = diff_minutes(scheduleTimeOf,currentTimeIs);
+            console.log(diff);
 
-            // duration in hours
-            var hours = parseInt(duration.asHours());
-
-            // duration in minutes
-            var minutes = parseInt(duration.asMinutes());
-
-            console.log([hours,minutes]);
-
-            if(minutes > 15){
+            if(diff > 15){
                 // var deleteOrder = await orderSchema.findByIdAndDelete(orderIs[0]._id);
                 let updateIs = {
                     status : "Order Cancelled",
                     isActive : false,
                 }
                 var deleteOrder = await orderSchema.findByIdAndUpdate(orderIs[jk]._id,updateIs);
-                return res.status(200).json({ IsSuccess: true , Data: 1 ,Message: "Order Deleted" });
-            }else if(minutes < 0){
+               
+            }else if(diff < 0){
                 return res.status(200).json({ IsSuccess: true , Data: 1 ,Message: "Schedule Time Passed Away" });
             }else{
                 return res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Order Can't Deleted Before 15 Minutes of ScheduleTime" });
             }
-
-            // console.log(scheduleTimeOf.getTime());
-            // let date1 = new Date(scheduleTimeOf);
-            // let date2 = new Date(currentTimeIs);
-            // console.log(date1);
-            // console.log(date2);
-
-            // let dd = scheduleTimeOf.split(",");
-            // console.log(dd[0]);
-            // console.log(dd[1]);
-
-            // let cc = currentTimeIs.split(",");
-
-            // let S1 = dd[0] + " " + dd[1]; 
-            // let S2 = cc[0] + " " + cc[1]; 
-            // let s1 = moment(S1);
-            // let s2 = moment(S2);
-            // console.log([S1,S2]);
-
-            // let timeDiff = moment.duration(scheduleTimeOf.diff(currentTimeIs,'minutes',true));
-            // let timeDiff = moment(s2,"DD/MM/YYYY HH:mm:ss").diff(moment(s1,"DD/MM/YYYY HH:mm:ss"));
-            // console.log(timeDiff);
-            // let aa = moment.duration(timeDiff)
-            // let d11 = aa.format("hh:mm:ss")
-            // console.log(aa.minutes);
-            // var now = moment("04/09/2013 15:00:00");
-            // var then = moment("04/09/2013 14:20:30");
-
-            // console.log(moment(moment.duration(s2.diff(s1))).format("hh:mm:ss"))
-            // console.log("=======================================================");
-            // console.log([scheduleDate,scheduleTime]);
-            // let timeList = scheduleTime.split(":");
-            // let dateList = scheduleDate.split("-");
-
-            // let month = Number(dateList[1]);
-            
-            // month = month - 1;
-            // scheduleTime = new Date(Number(dateList[0]),month,Number(dateList[2]),timeList[0],timeList[1]);
-            // let curr = new Date();
-
-            // console.log(curr);
-            // console.log(typeof(curr));
-
-            // console.log(scheduleTime);
-            // console.log(typeof(scheduleTime));
-
-            // let diff = diff_minutes(scheduleTime,curr);
-            // console.log(diff);
-            
-            // if(diff > 15){
-            //     // var deleteOrder = await orderSchema.findByIdAndDelete(orderIs[0]._id);
-            //     let updateIs = {
-            //         status : "Order Cancelled",
-            //         isActive : false,
-            //     }
-            //     var deleteOrder = await orderSchema.findByIdAndUpdate(orderIs[jk]._id,updateIs);
-            //     return res.status(200).json({ IsSuccess: true , Data: 1 ,Message: "Order Deleted" });
-            // }else if(diff < 0){
-            //     return res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Time limit Over" });
-            // }
-            // else{
-            //     return res.status(200).json({ IsSuccess: true , Data: [] , Message: "Order Can't Deleted Before 15 Minutes of ScheduleTime" });
-            // }
         }
+        return res.status(200).json({ IsSuccess: true , Data: 1 ,Message: "Order Deleted" });
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }
