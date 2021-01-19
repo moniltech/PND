@@ -395,7 +395,6 @@ router.post("/settings", async function (req, res, next) {
 router.post("/orders", async function (req, res, next) {
     try {
         let newdataset = [];
-        let multiOrderDataSet = [];
         let mysort = { dateTime: -1 };
 
         let cancelledOrders = await orderSchema
@@ -478,14 +477,169 @@ router.post("/orders", async function (req, res, next) {
     // console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
 });
 
+//Get CancelOrders-----------19/01/2021-------MONIL
+router.post("/getCancelSingleDeliveryOrders", async function(req,res,next){
+    try {
+
+        let mysort = { dateTime: -1 };
+
+        let cancelledOrders = await orderSchema
+            .find({ status: "Order Cancelled", isActive: false })
+            .sort(mysort);
+
+        let cancelOrderList = [];
+       
+        for(let i=0;i<cancelledOrders.length;i++){
+            if(!cancelledOrders[i].multiOrderNo){
+                let cancelledSingleOrders = await orderSchema
+                                            .find({ $and: [ {status: "Order Cancelled"}, { orderNo: cancelledOrders[i].orderNo } , { isActive: false } ] })
+                                            .populate(
+                                                "courierId",
+                                                "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                                            )
+                                            .populate("customerId")
+                                            .sort(mysort);
+
+                cancelOrderList.push(cancelledSingleOrders[0]);
+            }
+        }
+        if(cancelOrderList.length > 0){
+            res.status(200).json({ 
+                                    IsSuccess: true ,
+                                    CancelOrderCount: cancelOrderList.length, 
+                                    Data: cancelOrderList , 
+                                    Message: "Canceled Single Orders Found" 
+                                });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Canceled Single Orders Not Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+router.post("/orders_V1",async function(req,res,next){
+    try {
+        let mysort = { dateTime: -1 };
+        
+        let pendingOrders = await orderSchema
+            .find({ status: "Order Processing" });
+
+        let runningOrders = await orderSchema.find({
+            $or: [
+                { status: "Order Processing" },
+                { status: "Order Picked" },
+                { status: "Order Assigned" },
+            ],
+        });
+
+        let pendingOrderList = [];
+        
+        let runningOrderList = [];
+
+        for(let i=0;i<pendingOrders.length;i++){
+            if(!pendingOrders[i].multiOrderNo){
+                let pendingSingleOrders = await orderSchema
+                                            .find({ $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] })
+                                            .populate(
+                                                "courierId",
+                                                "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                                            )
+                                            .populate("customerId")
+                                            .sort(mysort);
+
+                pendingOrderList.push(pendingSingleOrders[0]);
+            }
+        }
+
+        for(let i=0;i<runningOrders.length;i++){
+            if(!runningOrders[i].multiOrderNo){
+                let runningSingleOrders = await orderSchema
+                                            .find({
+                                                $and: [ 
+                                                    { orderNo: runningOrders[i].orderNo }, 
+                                                    { $or: [
+                                                        { status: "Order Processing" },
+                                                        { status: "Order Picked" },
+                                                        { status: "Order Assigned" },
+                                                ] }
+                                             ]
+                                            })
+                                            .populate(
+                                                "courierId",
+                                                "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                                            )
+                                            .populate("customerId")
+                                            .sort(mysort);
+
+                runningOrderList.push(runningSingleOrders[0]);
+            }
+        }
+
+        let singleDeliveryOrders = {
+            PendingOrder : pendingOrderList,
+            RunningOrder : runningOrderList,
+        }
+        if(singleDeliveryOrders){
+            res.status(200).json({ 
+                IsSuccess: true ,
+                RunningOrderCount: runningOrderList.length, 
+                PendingOrderCount: pendingOrderList.length, 
+                Data: singleDeliveryOrders , 
+                Message: "Single Delivery Orders Found" 
+            });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Single Delivery Orders Not Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
+    }
+});
+
+router.post("/getMultiDeliveryCancelOrder", async function(req,res,next){
+    try {
+        let cancelledOrders = await orderSchema
+            .find({ status: "Order Cancelled", isActive: false });
+
+        let cancelMultiOrder = [];
+
+        for(let i=0;i<cancelledOrders.length;i++){
+            if(cancelledOrders[i].multiOrderNo){
+              
+                let multiDeliveryOrderList = await orderSchema.find({ orderNo: cancelledOrders[i].orderNo })
+                                                    .populate(
+                                                        "courierId",
+                                                        "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                                                    )
+                                                    .populate("customerId")
+                                                    .sort({ dateTime: -1 });
+                cancelMultiOrder.push(multiDeliveryOrderList);
+            }
+        }
+
+        if(cancelMultiOrder.length > 0){
+            res.status(200).json({ 
+                                    IsSuccess: true ,
+                                    CancelOrderCount: cancelMultiOrder.length, 
+                                    Data: cancelMultiOrder , 
+                                    Message: "Canceled Single Orders Found" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Canceled Single Orders Not Found" });
+        }
+
+    } catch (error) {
+        res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
+    }
+});
+
 function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
 }
 
 router.post("/getMultipleDeliveryOrder",async function(req,res,next){
     try {
-        let cancelledOrders = await orderSchema
-            .find({ status: "Order Cancelled", isActive: false });
+        // let cancelledOrders = await orderSchema
+        //     .find({ status: "Order Cancelled", isActive: false });
         
         let pendingOrders = await orderSchema
             .find({ status: "Order Processing" });
@@ -499,23 +653,23 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
         });
 
         let pendingMultiOrder = [];
-        let cancelMultiOrder = [];
+        // let cancelMultiOrder = [];
         let runningMultiOrder = [];
 
-        for(let i=0;i<cancelledOrders.length;i++){
-            if(cancelledOrders[i].multiOrderNo){
-                // console.log(cancelledOrders[i].orderNo);
-                // console.log(cancelledOrders[i].multiOrderNo);
-                let multiDeliveryOrderList = await orderSchema.find({ orderNo: cancelledOrders[i].orderNo })
-                                                    .populate(
-                                                        "courierId",
-                                                        "firstName lastName fcmToken mobileNo accStatus transport isVerified"
-                                                    )
-                                                    .populate("customerId")
-                                                    .sort({ dateTime: -1 });
-                                                    cancelMultiOrder.push(multiDeliveryOrderList);
-            }
-        }
+        // for(let i=0;i<cancelledOrders.length;i++){
+        //     if(cancelledOrders[i].multiOrderNo){
+        //         // console.log(cancelledOrders[i].orderNo);
+        //         // console.log(cancelledOrders[i].multiOrderNo);
+        //         let multiDeliveryOrderList = await orderSchema.find({ orderNo: cancelledOrders[i].orderNo })
+        //                                             .populate(
+        //                                                 "courierId",
+        //                                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+        //                                             )
+        //                                             .populate("customerId")
+        //                                             .sort({ dateTime: -1 });
+        //         cancelMultiOrder.push(multiDeliveryOrderList);
+        //     }
+        // }
 
         for(let i=0;i<pendingOrders.length;i++){
             if(pendingOrders[i].multiOrderNo){
@@ -552,14 +706,13 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
         let multiOrderDataSet = {
             RunningOrder: runningMultiOrder,
             PendingOrder: pendingMultiOrder,
-            CancelOrder: cancelMultiOrder,
+            // CancelOrder: cancelMultiOrder,
         };
 
         if(multiOrderDataSet){
             res.status(200).json({  IsSuccess: true,
                                     RunningOrderCount: runningMultiOrder.length,
                                     PendingOrderCount: pendingMultiOrder.length,
-                                    CancelOrderCount: cancelMultiOrder.length, 
                                     Data: multiOrderDataSet, 
                                     Message: "Orders Found" });
         }else{
