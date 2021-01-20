@@ -2533,10 +2533,19 @@ router.post("/vendorUpdate", async function(req,res,next){
     const { isApprove , vendorId } = req.body;
     try {
         let existVendor = await vendorModel.find({ _id: vendorId });
+        let lastStatus = existVendor[0].isApprove;
+        // console.log(lastStatus);
+        let temp;
+        if(lastStatus == true){
+            temp = false
+        }else if(lastStatus == false){
+            temp = true
+        }
         if(existVendor.length == 1){
             let updateIs = {
-                isApprove : isApprove
+                isApprove : temp
             };
+            console.log(temp);
             let updateVendor = await vendorModel.findByIdAndUpdate(existVendor[0]._id,updateIs);
             res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Vendor Is Approved" }); 
         }else{
