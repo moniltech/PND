@@ -1438,6 +1438,136 @@ router.post("/AssignOrder", async function (req, res, next) {
     const used = process.memoryUsage().heapUsed / 1024 / 1024;
     console.log(`The script uses approximately ${used} MB`);
 });
+
+
+
+//Assign Order of Multiple Delivery
+router.post("/AssignOrder_V1", async function (req, res, next) {
+    const { courierId, orderId } = req.body;
+    try {
+        let OrderData = await orderSchema.find({ orderNo: orderId, isActive: true });
+        let courierboy = await courierSchema.find({ _id: courierId });
+        // console.log(orderData);
+        if (OrderData.length > 0) {
+            let location = await currentLocation(courierId);
+            let pick = {
+                latitude: OrderData[0].pickupPoint.lat,
+                longitude: OrderData[0].pickupPoint.long,
+            };
+            let emplocation = {
+                latitude: location.latitude,
+                longitude: location.longitude,
+            };
+            let distanceKM = await GoogleMatrix(emplocation, pick);
+
+            for(let ij=0;ij<OrderData.length;ij++){
+                console.log("======================================================="+ij);
+                let orderIdIs = OrderData[ij]._id
+                var newrequest = new requestSchema({
+                    _id: new config.mongoose.Types.ObjectId(),
+                    courierId: courierId,
+                    orderId: orderIdIs,
+                    distance: distanceKM,
+                    status: "Accept",
+                    reason: "",
+                    fcmToken: courierboy[0].fcmToken,
+                });
+                let a = await newrequest.save();
+                let problemWith = await orderSchema.findByIdAndUpdate(orderIdIs, {
+                    courierId: courierId,
+                    status: "Order Assigned",
+                    note: "Order Has Been Assigned",
+                });    
+            }
+
+            // for(let k=0;k<OrderData.length;k++){
+            //     let id = OrderData[k]._id;
+            //     let problemWith = await orderSchema.findByIdAndUpdate(id, {
+            //         courierId: courierId,
+            //         status: "Order Assigned",
+            //         note: "Order Has Been Assigned",
+            //     });
+            // }
+            
+            let description =
+                courierboy[0].cId +
+                " Accepted Order " +
+                OrderData[0].orderNo +
+                " Assigned By Admin";
+
+            let logger = new locationLoggerSchema({
+                _id: new config.mongoose.Types.ObjectId(),
+                courierId: courierId,
+                lat: location.latitude,
+                long: location.longitude,
+                description: description,
+            });
+            let b = await logger.save();
+
+            //send Notificaiton Code Here To Customer
+            //send sms when directly assign SMS
+            //kd 30-08-2020
+            let courierData = await courierSchema.find({ _id: courierId });
+            //send Message to customer
+            let createMsg =
+                "Your order " +
+                OrderData[0].orderNo +
+                " has been accepted by our delivery boy " +
+                courierData[0].firstName +
+                " " +
+                courierData[0].lastName +
+                "--" +
+                courierData[0].mobileNo +
+                ".He Will Reach To You Shortly.";
+            // console.log(courierData[0].mobileNo + createMsg);
+            sendMessages(OrderData[0].pickupPoint.mobileNo +"", createMsg);
+
+            // New Code 03-09-2020
+            var payload = {
+                "title": "Order Alert",
+                "body": "New Order Alert Found For You.",
+                "data": {
+                    "sound": "surprise.mp3",
+                    "orderid": orderId,
+                    "distance": distanceKM,
+                    "click_action": "FLUTTER_NOTIFICATION_CLICK"
+                },
+                "to": courierboy[0].fcmToken
+            };
+            var options = {
+                'method': 'POST',
+                'url': 'https://fcm.googleapis.com/fcm/send',
+                'headers': {
+                    'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            };
+            request(options, function (error, response) {
+                if (error) {
+                    console.log(error.message);
+                } else {
+                    console.log("Sending Notification");
+                    console.log(response.body);
+                }
+            });
+            console.log(courierboy[0].fcmToken);
+            res
+                .status(200)
+                .json({ Message: "Order Assigned !", Data: 1, IsSuccess: true });
+        } else {
+            res
+                .status(200)
+                .json({ Message: "Order Not Assigned!", Data: 0, IsSuccess: true });
+        }
+    } catch (err) {
+        res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
+    }
+    const used = process.memoryUsage().heapUsed / 1024 / 1024;
+    console.log(`The script uses approximately ${used} MB`);
+    console.log("--------------------------------------------");
+});
+
 // send sms
 async function sendMessages(mobileNo, message) {
     // let msgportal =
