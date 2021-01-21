@@ -661,7 +661,7 @@ router.post("/ordercalcV3", async (req, res, next) => {
                 }
             }
         }
-    }else if(totaldistance >= settings[0].additionalKm){
+    }else if(totaldistance >= settings[0].additionalKm && totaldistance < settings[0].additionalKm2){
         console.log("Hello----IN 10KM CHARGE ABOVE KM------------");
         console.log(settings[0].addKmCharge);
         if (deliverytype == "Normal Delivery") {
@@ -681,6 +681,34 @@ router.post("/ordercalcV3", async (req, res, next) => {
                     basickm = 5;
                     basicamt = settings[0].PerUnder5KM;
                     aboveKmCharge = settings[0].addKmCharge;
+                    extrakm = remdis;
+                    extraamt = (remdis * settings[0].PerKM) + aboveKmCharge;
+                    extadeliverycharges = delivery[i].cost;
+                    amount = basicamt + extraamt + extadeliverycharges;
+                    totalamt = amount;
+                }
+            }
+        }
+    }else if(totaldistance >= settings[0].additionalKm2){
+        console.log("Hello----IN ABOVE KM2 CHARGE ------------");
+        console.log(settings[0].addKmCharge2);
+        if (deliverytype == "Normal Delivery") {
+            let remdis = totaldistance - 5;
+            basickm = 5;
+            basicamt = settings[0].PerUnder5KM;
+            aboveKmCharge = settings[0].addKmCharge2;
+            extrakm = remdis;
+            extraamt = (remdis * settings[0].PerKM) + aboveKmCharge;
+            extadeliverycharges = delivery[0].cost;
+            amount = basicamt + extraamt + extadeliverycharges;
+            totalamt = amount;
+        } else {
+            for (let i = 1; i < delivery.length; i++) {
+                if (deliverytype == delivery[i].title) {
+                    let remdis = totaldistance - 5;
+                    basickm = 5;
+                    basicamt = settings[0].PerUnder5KM;
+                    aboveKmCharge = settings[0].addKmCharge2;
                     extrakm = remdis;
                     extraamt = (remdis * settings[0].PerKM) + aboveKmCharge;
                     extadeliverycharges = delivery[i].cost;

@@ -26,9 +26,6 @@ const orderSettingsSchema = mongoose.Schema({
   NewUserprice: {
     type: Number,
   },
-  addKmCharge: {
-    type: Number,
-  },
   newpromocode: {
     type: String,
   },
@@ -36,6 +33,15 @@ const orderSettingsSchema = mongoose.Schema({
     type: Number,
   },
   additionalKm:  {
+    type: Number,
+  },
+  addKmCharge: {
+    type: Number,
+  },
+  additionalKm2:  {
+    type: Number,
+  },
+  addKmCharge2: {
     type: Number,
   },
 });

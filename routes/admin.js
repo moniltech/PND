@@ -291,10 +291,12 @@ router.post("/updatesetttings", async function (req, res, next) {
         AdminMObile5,
         NewUserUnderKm,
         NewUserprice,
-        addKmCharge,
         newpromocode,
         handling_charges,
         additionalKm,
+        addKmCharge,
+        additionalKm2,
+        addKmCharge2,
     } = req.body;
  
     try {
@@ -321,10 +323,12 @@ router.post("/updatesetttings", async function (req, res, next) {
                 AdminMObile5: AdminMObile5,
                 NewUserUnderKm: NewUserUnderKm,
                 NewUserprice: NewUserprice,
-                addKmCharge: addKmCharge,
                 newpromocode: newpromocode,
                 handling_charges: handling_charges,
                 additionalKm : additionalKm,
+                addKmCharge: addKmCharge,
+                additionalKm2 : additionalKm2,
+                addKmCharge2: addKmCharge2,
             };
             
             await settingsSchema.findByIdAndUpdate(id, updatedsettings);
@@ -353,10 +357,12 @@ router.post("/updatesetttings", async function (req, res, next) {
                 AdminMObile5: AdminMObile5,
                 NewUserUnderKm: NewUserUnderKm,
                 NewUserprice: NewUserprice,
-                addKmCharge: addKmCharge,
                 newpromocode: newpromocode,
                 handling_charges: handling_charges,
                 additionalKm: additionalKm,
+                addKmCharge: addKmCharge,
+                additionalKm2 : additionalKm2,
+                addKmCharge2: addKmCharge2,
             });
             
             await newsettings.save();
@@ -580,6 +586,7 @@ router.post("/orders_V1",async function(req,res,next){
             PendingOrder : pendingOrderList,
             RunningOrder : runningOrderList,
         }
+        
         if(singleDeliveryOrders){
             res.status(200).json({ 
                 IsSuccess: true ,
