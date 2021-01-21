@@ -821,9 +821,7 @@ router.post('/updateCustomerPickUp' , async function(req , res , next){
     try { 
         let existOrder = await orderSchema.find({ orderNo : orderNo });
         if(existOrder.length > 0){
-            // for(let i=0;i<existOrder.length;i++){
-                
-            // }
+            
             let updateLocation = {
                 pickupPoint:{
                     name : name,
@@ -837,8 +835,11 @@ router.post('/updateCustomerPickUp' , async function(req , res , next){
                     arriveTime: arriveTime,
                 }
             };
-            let UpdatedCustomerPickUpLocation = await orderSchema.findOneAndUpdate({orderNo : orderNo},updateLocation);
-            let updatedDataIs = await orderSchema.find({orderNo : orderNo})
+            for(let i=0;i<existOrder.length;i++){
+                let orderIdIs = existOrder[i]._id;
+                let UpdatedCustomerPickUpLocation = await orderSchema.findByIdAndUpdate(orderIdIs,updateLocation);
+            }
+            let updatedDataIs = await orderSchema.find({orderNo : orderNo});
             if(updatedDataIs != null){
                 res.status(200).json({ Message : "Customer Location Update" , IsSuccess : true , Data : updatedDataIs});
             }else{
@@ -852,29 +853,66 @@ router.post('/updateCustomerPickUp' , async function(req , res , next){
 
 //Update Order Delivery Location
 router.post("/updateDeliveryLocation", async function(req,res,next){
-    const { orderNo , name , mobileNo , address , lat , long, completeAddress, distance } = req.body;
+    const { orderNo , multiOrderNo , name , mobileNo , address , lat , long, completeAddress, distance } = req.body;
     try {
-        let existOrder = await orderSchema.find({ orderNo : orderNo });
-        if(existOrder.length > 0){
-            let updateLocation = {
-                deliveryPoint:{
-                    name : name,
-                    mobileNo : mobileNo,
-                    address : address,
-                    lat : lat,
-                    long : long,
-                    completeAddress : completeAddress,
-                    distance : distance,
+        if(orderNo){
+            //For Single Delivery Orders
+            let existOrder = await orderSchema.find({ orderNo : orderNo });
+            if(existOrder.length == 1){
+                let updateLocation = {
+                    deliveryPoint:{
+                        name : name,
+                        mobileNo : mobileNo,
+                        address : address,
+                        lat : lat,
+                        long : long,
+                        completeAddress : completeAddress,
+                        distance : distance,
+                    }
+                };
+                
+                let orderIdIs = existOrder[0]._id;
+                let UpdatedCustomerDropLocation = await orderSchema.findByIdAndUpdate(orderIdIs,updateLocation);
+                let updatedDataIs = await orderSchema.find({orderNo : orderNo});
+                if(updatedDataIs != null){
+                    res.status(200).json({ Message : "Customer Location Update" , IsSuccess : true , Data : updatedDataIs});
+                }else{
+                    res.status(200).json({ Message : "Customer Location Not Update" , IsSuccess : true });
                 }
-            };
-            let UpdatedCustomerDropLocation = await orderSchema.findOneAndUpdate({orderNo : orderNo},updateLocation);
-            let updatedDataIs = await orderSchema.find({orderNo : orderNo})
-            if(updatedDataIs != null){
-                res.status(200).json({ Message : "Customer Location Update" , IsSuccess : true , Data : updatedDataIs});
             }else{
-                res.status(400).json({ Message : "Customer Location Not Update" , IsSuccess : false });
+                res.status(200).json({ IsSuccess: true , Data: [] , Message: "Order Not Exist" });
             }
+        }else if(multiOrderNo != null ){
+            //For Multi Delivery order update drop on multiorderNo of particular delivery
+            let existOrder = await orderSchema.find({ multiOrderNo : multiOrderNo });
+            if(existOrder.length == 1){
+                let updateLocation = {
+                    deliveryPoint:{
+                        name : name,
+                        mobileNo : mobileNo,
+                        address : address,
+                        lat : lat,
+                        long : long,
+                        completeAddress : completeAddress,
+                        distance : distance,
+                    }
+                };
+                
+                let orderIdIs = existOrder[0]._id;
+                let UpdatedCustomerDropLocation = await orderSchema.findByIdAndUpdate(orderIdIs,updateLocation);
+                let updatedDataIs = await orderSchema.find({orderNo : orderNo})
+                if(updatedDataIs != null){
+                    res.status(200).json({ Message : "Customer Location Update" , IsSuccess : true , Data : updatedDataIs});
+                }else{
+                    res.status(200).json({ Message : "Customer Location Not Update" , IsSuccess : true });
+                }
+            }else{
+                res.status(200).json({ IsSuccess: true , Data: [] , Message: "Order Not Exist" });
+            }
+        }else{
+            res.status(200).json({ IsSuccess: false , Data: [] , Message: "Wrong Inputs" });
         }
+        
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }

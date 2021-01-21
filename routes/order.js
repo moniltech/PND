@@ -794,7 +794,7 @@ router.post("/ordercalcV3", async (req, res, next) => {
     console.log("extracharges : "+extracharges);
     console.log("extadeliverycharges : "+Math.ceil(extadeliverycharges.toFixed(2)));
     console.log("==============================================================================================");
-    
+
     //TESTING FCMTOKEN
     let AdminMobile = await settingsSchema.find({}).select('AdminMObile1 AdminMObile2 AdminMObile3 AdminMObile4 AdminMObile5 -_id');
     console.log("Admin numbers-------------------------------------------------");
@@ -1181,11 +1181,11 @@ router.post("/ordercalcV4", async (req, res, next) => {
         console.log("New User DisAmt Calc :"+totaldistance);
         let newUserBasicPrice = parseFloat(settings[0].NewUserprice);
         var distamt = Number(newUserBasicPrice.toFixed(2)) + Number(extraamt.toFixed(2));
-        distamt = (Math.round(distamt) % 10) > 5 ? round(distamt, 10) : round(distamt, 5);
+        distamt = (Math.round(distamt) % 10) > 5 ? Math.round(distamt, 10) : Math.round(distamt, 5);
     }else{
         console.log("Checking distamt");
         distamt = Number(basicamt.toFixed(2)) + Number(extraamt.toFixed(2));
-        distamt = (Math.round(distamt) % 10) > 5 ? round(distamt, 10) : round(distamt, 5);
+        distamt = (Math.round(distamt) % 10) > 5 ? Math.round(distamt, 10) : Math.round(distamt, 5);
     }
     
     let note;
