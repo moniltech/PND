@@ -747,16 +747,21 @@ router.post("/ordercalcV3", async (req, res, next) => {
         customerId : mongoose.Types.ObjectId(customerId),
     });
 
+    var distamt;
+    // console.log(parseFloat(distamt));
     if(userPastOrders.length == 0 && totaldistance < settings[0].NewUserUnderKm){
         console.log(totaldistance);
         let newUserBasicPrice = parseFloat(settings[0].NewUserprice);
-        var distamt = Number(newUserBasicPrice.toFixed(2)) + Number(extraamt.toFixed(2));
+        distamt = Number(newUserBasicPrice.toFixed(2)) + Number(extraamt.toFixed(2));
         distamt = (Math.round(distamt) % 10) > 5 ? round(distamt, 10) : round(distamt, 5);
     }else{
+        
         distamt = Number(basicamt.toFixed(2)) + Number(extraamt.toFixed(2));
-        distamt = (Math.round(distamt) % 10) > 5 ? round(distamt, 10) : round(distamt, 5);
+        
+        distamt = (Math.round(distamt) % 10) > 5 ? Math.round(distamt, 10) : Math.round(distamt, 5);
     }
-    
+    // console.log("--------------MANUI ROOT ---------------------------");
+    // console.log(parseFloat(distamt));
     let note;
     //Find Parcel Content From Database
     let parcelContentsList = [];
@@ -774,11 +779,22 @@ router.post("/ordercalcV3", async (req, res, next) => {
     for (let a = 0; a < sortParcelContents.length; a++) {
         extracharges = extracharges + sortParcelContents[a].price;
     }
+    // console.log("--------------------------------------------check check-------------------------------------");
+    // console.log(extracharges);
+    // console.log(extadeliverycharges);
+    // console.log(distamt);
+    let amt = Number(distamt) + Number(extracharges) + Number(Math.ceil(extadeliverycharges.toFixed(2)));
 
-    let amt = Number(distamt) + extracharges + Math.ceil(extadeliverycharges.toFixed(2));
     promoused = prmcodes.length != 0 ? (amt * prmcodes[0].discount) / 100 : 0;
     let netamount = amt - Math.ceil(promoused.toFixed(2));
 
+    console.log("==========================Checking=====================================================================");
+    console.log("DistAMT : "+distamt);
+    console.log("AMT : "+amt);
+    console.log("extracharges : "+extracharges);
+    console.log("extadeliverycharges : "+Math.ceil(extadeliverycharges.toFixed(2)));
+    console.log("==============================================================================================");
+    
     //TESTING FCMTOKEN
     let AdminMobile = await settingsSchema.find({}).select('AdminMObile1 AdminMObile2 AdminMObile3 AdminMObile4 AdminMObile5 -_id');
     console.log("Admin numbers-------------------------------------------------");
