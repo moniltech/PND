@@ -2921,7 +2921,12 @@ router.post("/c_responseOrder", async function (req, res, next) {
             if (datalist.length != 0) {
                 res
                     .status(200)
-                    .json({ Message: "Orders Found!", Data: datalist, IsSuccess: true });
+                    .json({ 
+                            Message: "Orders Found!",
+                            Count: datalist.length, 
+                            Data: datalist, 
+                            IsSuccess: true
+                        });
             } else {
                 res
                     .status(200)

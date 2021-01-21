@@ -302,18 +302,30 @@ router.post("/vendorOrderCalc",async function(req,res,next){
             let totalVendorBill = 0;
 
             //totalAmount is total Courier Charge
-            if(courierChargeCollectFromCust == false){
+            if(courierChargeCollectFromCust == true){
                 totalVendorBill = totalAmount + vendorAmount;
             }else{
                 totalVendorBill = vendorAmount;
             }
 
             let sendData = {
+                CourierChargeCollectFromCustomerIs: orderIs[j].deliveryPoint.courierChargeCollectFromCustomer,
+                CourierChargeCollectFrom : orderIs[j].deliveryPoint.courierChargeCollectFromCustomer == true ? "Customer" : "Vendor",
                 VendorAmount : vendorAmount,
                 CouriersChargeIs : totalAmount,
                 VendorTotalBill : totalVendorBill
             }
+            console.log(sendData);
             DataPass.push(sendData);
+            let updateDeliveryDetails = {
+                "deliveryPoint.vendorBillAmount": vendorAmount,
+                "deliveryPoint.customerCourierCharge": totalAmount,
+                "deliveryPoint.vendorBillFinalAmount": totalVendorBill
+            }
+            let vendorOrderMTNum = orderIs[j].multiOrderNo;
+            console.log(vendorOrderMTNum);
+            console.log("=======================================================================================");
+            let updateInOrder = await demoOrderSchema.findByIdAndUpdate(orderIs[j]._id,updateDeliveryDetails);
         }
         console.log(DataPass);
         let pndTotalAmountCollect = 0;
@@ -328,16 +340,16 @@ router.post("/vendorOrderCalc",async function(req,res,next){
 
         let finalPNDBill = parseFloat(pndTotalAmountCollect) - parseFloat(pndTotalCourierCharge);
         finalPNDBill = Math.abs(finalPNDBill);
-        for(let jk=0;jk<orderIs.length;jk++){
-            let updateIs = {
-                "deliveryPoint.customerCourierCharge" : DataPass[jk].CouriersChargeIs,
-                "deliveryPoint.vendorBillFinalAmount" : DataPass[jk].VendorTotalBill,
-                "chargeOfPND" : finalPNDBill,
-            }
-            let vendorOrderMTNum = orderIs[jk].multiOrderNo;
-            // console.log(vendorOrderMTNum);
-            let updateInOrder = await demoOrderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
-        }
+        // for(let jk=0;jk<orderIs.length;jk++){
+        //     let updateIs = {
+        //         "deliveryPoint.customerCourierCharge" : DataPass[jk].CouriersChargeIs,
+        //         "deliveryPoint.vendorBillFinalAmount" : DataPass[jk].VendorTotalBill,
+        //         "chargeOfPND" : finalPNDBill,
+        //     }
+        //     let vendorOrderMTNum = orderIs[jk].multiOrderNo;
+        //     // console.log(vendorOrderMTNum);
+        //     let updateInOrder = await demoOrderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
+        // }
        
         res.status(200).json({ 
                                IsSuccess: true,
@@ -364,7 +376,7 @@ router.post("/vendorOrderCalc",async function(req,res,next){
                 let totalVendorBill = 0;
 
                 //totalAmount is total Courier Charge
-                if(courierChargeCollectFromCust == false){
+                if(courierChargeCollectFromCust == true){
                     totalVendorBill = totalAmount + vendorAmount;
                 }else{
                     totalVendorBill = vendorAmount;
@@ -376,6 +388,15 @@ router.post("/vendorOrderCalc",async function(req,res,next){
                     VendorTotalBill : totalVendorBill
                 }
                 DataPass.push(sendData);
+                let updateDeliveryDetails = {
+                    "deliveryPoint.vendorBillAmount": vendorAmount,
+                    "deliveryPoint.customerCourierCharge": totalAmount,
+                    "deliveryPoint.vendorBillFinalAmount": totalVendorBill
+                }
+                let vendorOrderMTNum = orderIs[h].multiOrderNo;
+                console.log(vendorOrderMTNum);
+                console.log("====================================nahhhhhhhhhhhhhhh==================================");
+                let updateInOrder = await demoOrderSchema.findByIdAndUpdate(orderIs[h]._id,updateDeliveryDetails);
             }
             console.log(DataPass);
             let pndTotalAmountCollect = 0;
@@ -390,16 +411,17 @@ router.post("/vendorOrderCalc",async function(req,res,next){
 
             let finalPNDBill = parseFloat(pndTotalAmountCollect) - parseFloat(pndTotalCourierCharge);
             finalPNDBill = Math.abs(finalPNDBill);
-            for(let jk=0;jk<orderIs.length;jk++){
-                let updateIs = {
-                    "deliveryPoint.customerCourierCharge" : DataPass[jk].CouriersChargeIs,
-                    "deliveryPoint.vendorBillFinalAmount" : DataPass[jk].VendorTotalBill,
-                    "chargeOfPND" : finalPNDBill,
-                }
-                let vendorOrderMTNum = orderIs[jk].multiOrderNo;
-                // console.log(vendorOrderMTNum);
-                let updateInOrder = await demoOrderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
-            }
+            // for(let jk=0;jk<orderIs.length;jk++){
+            //     let updateIs = {
+            //         "deliveryPoint.customerCourierCharge" : DataPass[jk].CouriersChargeIs,
+            //         "deliveryPoint.vendorBillFinalAmount" : DataPass[jk].VendorTotalBill,
+            //         "chargeOfPND" : finalPNDBill,
+            //     }
+            //     let vendorOrderMTNum = orderIs[jk].multiOrderNo;
+            //     // console.log(vendorOrderMTNum);
+            //     console.log("==============================nahhhhhhhhhhhhhhhhhhhhh======================================");
+            //     let updateInOrder = await demoOrderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
+            // }
             res.status(200).json({ 
                 IsSuccess: true,
                 PndTotalAmountCollect: pndTotalAmountCollect,
@@ -745,7 +767,7 @@ function convertISOToReadable(isoDate){
     let dateTimeIs = moment(isoDate).tz("Asia/Calcutta")
     .format("MMM Do YYYY, h:mm:ss a");
     
-    console.log(dateTimeIs);
+    // console.log(dateTimeIs);
     let dateTimeInList = dateTimeIs.split(",");
     // isoDate = new Date(isoDate);
     // console.log(isoDate);

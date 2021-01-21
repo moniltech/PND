@@ -1447,7 +1447,7 @@ router.post("/AssignOrder_V1", async function (req, res, next) {
     try {
         let OrderData = await orderSchema.find({ orderNo: orderId, isActive: true });
         let courierboy = await courierSchema.find({ _id: courierId });
-        // console.log(orderData);
+ 
         if (OrderData.length > 0) {
             let location = await currentLocation(courierId);
             let pick = {
@@ -1459,7 +1459,7 @@ router.post("/AssignOrder_V1", async function (req, res, next) {
                 longitude: location.longitude,
             };
             let distanceKM = await GoogleMatrix(emplocation, pick);
-
+            console.log(OrderData.length);
             for(let ij=0;ij<OrderData.length;ij++){
                 console.log("======================================================="+ij);
                 let orderIdIs = OrderData[ij]._id
@@ -1472,6 +1472,8 @@ router.post("/AssignOrder_V1", async function (req, res, next) {
                     reason: "",
                     fcmToken: courierboy[0].fcmToken,
                 });
+                console.log(orderIdIs);
+                console.log(newrequest);
                 let a = await newrequest.save();
                 let problemWith = await orderSchema.findByIdAndUpdate(orderIdIs, {
                     courierId: courierId,
