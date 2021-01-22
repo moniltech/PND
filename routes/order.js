@@ -1788,8 +1788,9 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
             note: "Your order is processing!",
         });
         // console.log("---------------amount Collected-----------");
-        console.log(newOrder);
-        var placedorder = await newOrder.save();
+        // console.log(newOrder);
+        // var placedorder = await newOrder.save();
+        var placedorder = newOrder;
 
         var avlcourier = await PNDfinder(
             pkLat,
@@ -1837,7 +1838,14 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
     var findAdminFcmToken4 = await customerSchema.find({ mobileNo: AdminNumber4 }).select('fcmToken -_id');
     var findAdminFcmToken5 = await customerSchema.find({ mobileNo: AdminNumber5 }).select('fcmToken -_id');
 
-    var AdminFcmToken = [findAdminFcmToken[0].fcmToken,findAdminFcmToken2[0].fcmToken,findAdminFcmToken3[0].fcmToken,findAdminFcmToken4[0].fcmToken,findAdminFcmToken5[0].fcmToken];
+    let admin1FcmIs = findAdminFcmToken[0].fcmToken == null ? "" : findAdminFcmToken[0].fcmToken;
+    let admin2FcmIs = findAdminFcmToken2[0].fcmToken == null ? "" : findAdminFcmToken2[0].fcmToken;
+    let admin3FcmIs = findAdminFcmToken3[0].fcmToken == null ? "" : findAdminFcmToken3[0].fcmToken;
+    let admin4FcmIs = findAdminFcmToken4[0].fcmToken == null ? "" : findAdminFcmToken4[0].fcmToken;
+    let admin5FcmIs = findAdminFcmToken5[0].fcmToken == null ? "" : findAdminFcmToken5[0].fcmToken;
+
+    // var AdminFcmToken = [findAdminFcmToken[0].fcmToken,findAdminFcmToken2[0].fcmToken,findAdminFcmToken3[0].fcmToken,findAdminFcmToken4[0].fcmToken,findAdminFcmToken5[0].fcmToken];
+    var AdminFcmToken = [admin1FcmIs, admin2FcmIs , admin3FcmIs , admin4FcmIs , admin5FcmIs];
     console.log("-------------------------ADMINS TOKENS-----------------------------");
     console.log(AdminFcmToken);
 
@@ -1928,7 +1936,7 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
                 console.log(myJsonBody[51]);
                 if(myJsonBody[51]==0){
                     console.log("Send Text notification of new order..........!!!");
-                    sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                    // sendMessages(AdminPhoneNumbers[i],newOrderNotification);
                 }
                 if (error) {
                     console.log(error.message);
@@ -1937,7 +1945,7 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
                     console.log(response.body);
                     if(response.body.success=="1"){
                         console.log("Send Text notification of new order..........!!!");
-                        sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                        // sendMessages(AdminPhoneNumbers[i],newOrderNotification);
                     }
                 }
             });
@@ -1993,12 +2001,29 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
     }
 });
 
+router.post("/test",async function(req,res,next){
+    sendMessages("8200682175","Anirudh is on testing....................!!!!!!");
+});
+
 async function sendMessages(mobileNo, message) {
     let msgportal = "http://websms.mitechsolution.com/api/push.json?apikey=" + process.env.SMS_API + "&route=vtrans&sender=PNDDEL&mobileno=" + mobileNo + "&text= " + message;
     console.log(msgportal);
-    axios.get(msgportal);
-    var data = await axios.get(msgportal);
-    return data;
+    try {
+        await axios.get(msgportal)
+            .then(resp=>{
+                console.log("===========================================================================");
+                console.log(resp.data);
+            })  
+            .catch(error=>{
+                console.log("=========================  ERROR  ==================================================");
+            
+                console.log(error.response.data);
+            });;
+        var data = await axios.get(msgportal);
+        return data;    
+    } catch (error) {
+        return 0;    
+    }
 }
 //MultiOrder Number ---04-11-2020
 
