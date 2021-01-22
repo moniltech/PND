@@ -766,6 +766,12 @@ function convertISOToReadable(isoDate){
     // let dateTimeIs = moment(isoDate).format("MMM Do YYYY, h:mm:ss a");
     let dateTimeIs = moment(isoDate).tz("Asia/Calcutta")
     .format("MMM Do YYYY, h:mm:ss a");
+
+    let dateTimeIsforFilter = moment(isoDate).tz("Asia/Calcutta")
+    .format("DD/MM/YYYY, h:mm:ss a")
+    .split(",")[0];
+
+    // let filterData = dateTimeIsforFilter.split(",")
     
     // console.log(dateTimeIs);
     let dateTimeInList = dateTimeIs.split(",");
@@ -791,7 +797,7 @@ function convertISOToReadable(isoDate){
     
     // let TimeIs = hour + ":" + minutes + ":" + seconds; 
     
-    return [dateTimeInList[0],dateTimeInList[1]];
+    return [dateTimeInList[0],dateTimeInList[1],dateTimeIsforFilter];
 }
 
 //Convert String Date to ISO
