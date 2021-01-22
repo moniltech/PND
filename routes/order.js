@@ -1789,8 +1789,8 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
         });
         // console.log("---------------amount Collected-----------");
         // console.log(newOrder);
-        // var placedorder = await newOrder.save();
-        var placedorder = newOrder;
+        var placedorder = await newOrder.save();
+        // var placedorder = newOrder;
 
         var avlcourier = await PNDfinder(
             pkLat,
