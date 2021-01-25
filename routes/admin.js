@@ -1579,10 +1579,26 @@ async function sendMessages(mobileNo, message) {
     //     message +
     //     "&fl=0&gwid=2";
     let msgportal = "http://websms.mitechsolution.com/api/push.json?apikey=" + process.env.SMS_API + "&route=vtrans&sender=PNDDEL&mobileno=" + mobileNo + "&text= " + message;
-    console.log(msgportal);
-    axios.get(msgportal);
-    var data = await axios.get(msgportal);
-    return data;
+    // console.log(msgportal);
+    // axios.get(msgportal);
+    // var data = await axios.get(msgportal);
+    // return data;
+    try {
+        await axios.get(msgportal)
+            .then(resp=>{
+                console.log("===========================================================================");
+                console.log(resp.data);
+            })  
+            .catch(error=>{
+                console.log("=========================  ERROR  ==================================================");
+            
+                console.log(error.response.data);
+            });;
+        var data = await axios.get(msgportal);
+        return data;    
+    } catch (error) {
+        return 0;    
+    }
 }
 router.post(
     "/policeverification",
