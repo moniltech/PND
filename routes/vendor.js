@@ -116,18 +116,22 @@ router.post("/updateVendorCharge", async function(req,res,next){
 
 //Update Vendor Location-----31-12-2020---MONIL
 router.post("/updateVendor" , async function(req,res,next){
-    const { vendorId , lat , long , completeAddress} = req.body;
+    const { vendorId , lat , long , completeAddress , name, mobileNo , company , email , gstNo , panNumber } = req.body;
     try {
         let existVendor = await vendorModelSchema.find({ _id: vendorId });
         if(existVendor.length == 1){
             let updateIs = {
-
+                name: name,
+                mobileNo: mobileNo,
+                company: company,
+                email: email,
+                gstNo: gstNo,
+                panNumber: panNumber,
                 gpsLocation :{
                     lat: lat,
                     long: long,
                     completeAddress: completeAddress,
                 },
-           
             }
             let updateRecord = await vendorModelSchema.findByIdAndUpdate(existVendor[0]._id,updateIs);
             res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Data Updated" });
@@ -522,15 +526,33 @@ router.post("/vendorOrder", orderimg.single("orderimg"), async function(req,res,
     }
 });
 
+var getDaysArray = function(start, end) {
+    for(var arr=[],dt=new Date(start); dt<=end; dt.setDate(dt.getDate()+1)){
+        arr.push(new Date(dt));
+    }
+    return arr;
+};
+
 //All Vendor Order Listing-----------04/01/2021----MONIL
 router.post("/vendorOrdersList" , async function(req,res,next){
-    const { vendorId , ofDate } = req.body;
+    const { vendorId , fromDate , toDate } = req.body;
     
     try {
+        let d1List = fromDate.split("/");
+        let d2List = toDate.split("/");
+
+        let date1 = d1List[2] + "-" + d1List[1] + "-" + d1List[0];
+        let date2 = d2List[2] + "-" + d2List[1] + "-" + d2List[0];
+
+        console.log(date1);
+        console.log(date2);
+        var daylist = getDaysArray(new Date(date1),new Date(date2));
+        daylist.map((v)=>v.toISOString().slice(0,10)).join("");
+        console.log(daylist);
         let orderData;
         // console.log(isoDate1);
         // console.log(isoDate2);
-        if(ofDate){
+        if(toDate){
             let isoDate1 = convertStringDateToISO(ofDate);
             let isoDate2 = convertStringDateToISOPlusOne(ofDate);
             
