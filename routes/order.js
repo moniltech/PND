@@ -2454,16 +2454,16 @@ router.post("/activeOrdersV2", async function (req, res, next) {
         for(let i=0;i<record.length;i++){
             aciveOrderIs.push(record[i].orderNo);
         }
-        console.log("Orders No: "+aciveOrderIs);
+        // console.log("Orders No: "+aciveOrderIs);
         var unique = aciveOrderIs.filter(onlyUnique);
-        console.log(unique);
+        // console.log(unique);
         let result = [];
         let completeActiveList = completeUnique.concat(unique);
         // console.log(completeActiveList);
         let singleOrder = [];
         let multiOrder = [];
         for(let j=0;j<completeActiveList.length;j++){
-            console.log(completeActiveList[j]);
+            // console.log(completeActiveList[j]);
             let orderData = await orderSchema.find({ orderNo: completeActiveList[j] });
             if(orderData.length > 1){
                 multiOrder.push(orderData);
