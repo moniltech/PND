@@ -535,27 +535,30 @@ var getDaysArray = function(start, end) {
 
 //All Vendor Order Listing-----------04/01/2021----MONIL
 router.post("/vendorOrdersList" , async function(req,res,next){
-    const { vendorId , fromDate , toDate } = req.body;
+    const { vendorId , fromDate , ofDate } = req.body;
     
     try {
-        let d1List = fromDate.split("/");
-        let d2List = toDate.split("/");
+        // let d1List = fromDate.split("/");
+        // let d2List = toDate.split("/");
 
-        let date1 = d1List[2] + "-" + d1List[1] + "-" + d1List[0];
-        let date2 = d2List[2] + "-" + d2List[1] + "-" + d2List[0];
+        // let date1 = d1List[2] + "-" + d1List[1] + "-" + d1List[0];
+        // let date2 = d2List[2] + "-" + d2List[1] + "-" + d2List[0];
 
-        console.log(date1);
-        console.log(date2);
-        var daylist = getDaysArray(new Date(date1),new Date(date2));
-        daylist.map((v)=>v.toISOString().slice(0,10)).join("");
-        console.log(daylist);
+        // console.log(date1);
+        // console.log(date2);
+        // var daylist = getDaysArray(new Date(date1),new Date(date2));
+        // daylist.map((v)=>v.toISOString().slice(0,10)).join("");
+        // console.log(daylist);
         let orderData;
         // console.log(isoDate1);
         // console.log(isoDate2);
-        if(toDate){
+        if(ofDate){
             let isoDate1 = convertStringDateToISO(ofDate);
             let isoDate2 = convertStringDateToISOPlusOne(ofDate);
             
+            console.log(isoDate1);
+            console.log(isoDate2);
+
             orderData = await demoOrderSchema.find({
                 vendorId: mongoose.Types.ObjectId(vendorId),
                 dateTime: {
@@ -790,7 +793,7 @@ function convertISOToReadable(isoDate){
     .format("MMM Do YYYY, h:mm:ss a");
 
     let dateTimeIsforFilter = moment(isoDate).tz("Asia/Calcutta")
-    .format("DD/MM/YYYY, h:mm:ss a")
+    .format("YYYY-MM-DD, h:mm:ss a")
     .split(",")[0];
 
     // let filterData = dateTimeIsforFilter.split(",")
