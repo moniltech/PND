@@ -1783,7 +1783,7 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
             discount: discount,
             additionalAmount: additionalAmount,
             finalAmount: finalAmount,
-            // TransactionId: TransactionId,
+            TransactionId: TransactionId == undefined ? "" : TransactionId,
             status: "Order Processing",
             note: "Your order is processing!",
         });
@@ -2058,6 +2058,7 @@ router.post("/multiNewOrder", async function(req,res,next){
         // schedualDateTime,
         scheduleDate,
         scheduleTime,
+        TransactionId
     } = req.body;
     let num = getOrderNumber();
     // let numMulti = getMultiOrderNumber();
@@ -2106,6 +2107,7 @@ router.post("/multiNewOrder", async function(req,res,next){
                 discount: discount,
                 additionalAmount: additionalAmount,
                 finalAmount: finalAmount,
+                TransactionId: TransactionId == undefined ? "" : TransactionId,
                 status: "Order Processing",
                 note: "Your order is processing!",
             });

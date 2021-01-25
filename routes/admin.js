@@ -663,21 +663,6 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
         // let cancelMultiOrder = [];
         let runningMultiOrder = [];
 
-        // for(let i=0;i<cancelledOrders.length;i++){
-        //     if(cancelledOrders[i].multiOrderNo){
-        //         // console.log(cancelledOrders[i].orderNo);
-        //         // console.log(cancelledOrders[i].multiOrderNo);
-        //         let multiDeliveryOrderList = await orderSchema.find({ orderNo: cancelledOrders[i].orderNo })
-        //                                             .populate(
-        //                                                 "courierId",
-        //                                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
-        //                                             )
-        //                                             .populate("customerId")
-        //                                             .sort({ dateTime: -1 });
-        //         cancelMultiOrder.push(multiDeliveryOrderList);
-        //     }
-        // }
-
         for(let i=0;i<pendingOrders.length;i++){
             if(pendingOrders[i].multiOrderNo){
                 // console.log(pendingOrders[i].orderNo);
@@ -691,8 +676,10 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
                                                     .sort({ dateTime: -1 });
 
                 pendingMultiOrder.push(multiDeliveryOrderList);
+                
             }
-        }
+        };
+        var new_pendingMultiOrder = multiDimensionalUnique(pendingMultiOrder);
 
         for(let i=0;i<runningOrders.length;i++){
             if(runningOrders[i].multiOrderNo){
@@ -709,17 +696,17 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
                 runningMultiOrder.push(multiDeliveryOrderList);
             }
         }
+        var new_runningMultiOrder = multiDimensionalUnique(runningMultiOrder);
 
         let multiOrderDataSet = {
-            RunningOrder: runningMultiOrder,
-            PendingOrder: pendingMultiOrder,
-            // CancelOrder: cancelMultiOrder,
+            RunningOrder: new_runningMultiOrder,
+            PendingOrder: new_pendingMultiOrder,
         };
 
         if(multiOrderDataSet){
             res.status(200).json({  IsSuccess: true,
-                                    RunningOrderCount: runningMultiOrder.length,
-                                    PendingOrderCount: pendingMultiOrder.length,
+                                    RunningOrderCount: new_runningMultiOrder.length,
+                                    PendingOrderCount: new_pendingMultiOrder.length,
                                     Data: multiOrderDataSet, 
                                     Message: "Orders Found" });
         }else{
