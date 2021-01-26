@@ -297,6 +297,7 @@ router.post("/updatesetttings", async function (req, res, next) {
         addKmCharge,
         additionalKm2,
         addKmCharge2,
+        maxUnderKm
     } = req.body;
  
     try {
@@ -329,6 +330,7 @@ router.post("/updatesetttings", async function (req, res, next) {
                 addKmCharge: addKmCharge,
                 additionalKm2 : additionalKm2,
                 addKmCharge2: addKmCharge2,
+                maxUnderKm: maxUnderKm,
             };
             
             await settingsSchema.findByIdAndUpdate(id, updatedsettings);
@@ -363,6 +365,7 @@ router.post("/updatesetttings", async function (req, res, next) {
                 addKmCharge: addKmCharge,
                 additionalKm2 : additionalKm2,
                 addKmCharge2: addKmCharge2,
+                maxUnderKm: maxUnderKm
             });
             
             await newsettings.save();
@@ -523,6 +526,22 @@ router.post("/getCancelSingleDeliveryOrders", async function(req,res,next){
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }
 });
+
+function multiDimensionalUnique(arr) {
+    var uniques = [];
+    var itemsFound = {};
+    for(var i = 0, l = arr.length; i < l; i++) {
+        var stringified = JSON.stringify(arr[i]);
+        if(itemsFound[stringified]) 
+        { 
+            continue; 
+        }
+        uniques.push(arr[i]);
+        itemsFound[stringified] = true;
+    }
+    return uniques;
+};
+    
 
 router.post("/orders_V1",async function(req,res,next){
     try {

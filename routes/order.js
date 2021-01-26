@@ -627,6 +627,13 @@ router.post("/ordercalcV3", async (req, res, next) => {
     let delivery = await deliverytypesSchema.find({});
     let totaldistance = await GoogleMatrix(fromlocation, tolocation);
 
+    console.log("====================================TOTAL DISTANCE===========================================================");
+    console.log(totaldistance);
+    if(totaldistance > settings[0].maxUnderKm){
+        // console.log("Here================================================Under=====Chewck");
+        return res.status(200).json({ IsSuccess : true , Data: [] , Message: "We Don't Deliver in this area" });
+    }
+
     let basickm = 0;
     let basicamt = 0;
     let extrakm = 0;
@@ -717,7 +724,11 @@ router.post("/ordercalcV3", async (req, res, next) => {
                 }
             }
         }
+    }else if(totaldistance > settings[0].maxUnderKm){
+        console.log("==================================================GREATER======================================");
+        return res.status(200).json({ IsSuccess: true , Data: [] , Message: "We Don't Deliver in this Area" });
     } else {
+        console.log("========================================FINAL=====================================");
         if (deliverytype == "Normal Delivery") {
             let remdis = totaldistance - 5;
             basickm = 5;
@@ -1081,6 +1092,11 @@ router.post("/ordercalcV4", async (req, res, next) => {
     // let totaldistance = await GoogleMatrix(fromlocation, tolocation);
     let totaldistance = tempDistanceForALL;
 
+    if(totaldistance > settings[0].maxUnderKm){
+        // console.log("Here================================================Under=====Chewck");
+        return res.status(200).json({ IsSuccess : true , Data: [] , Message: "We Don't Deliver in this area" });
+    }
+
     let basickm = 0;
     let basicamt = 0;
     let extrakm = 0;
@@ -1146,6 +1162,36 @@ router.post("/ordercalcV4", async (req, res, next) => {
                 }
             }
         }
+    }else if(totaldistance >= settings[0].additionalKm2){
+        console.log("Hello----IN ABOVE KM2 CHARGE ------------");
+        console.log(settings[0].addKmCharge2);
+        if (deliverytype == "Normal Delivery") {
+            let remdis = totaldistance - 5;
+            basickm = 5;
+            basicamt = settings[0].PerUnder5KM;
+            aboveKmCharge = settings[0].addKmCharge2;
+            extrakm = remdis;
+            extraamt = (remdis * settings[0].PerKM) + aboveKmCharge;
+            extadeliverycharges = delivery[0].cost;
+            amount = basicamt + extraamt + extadeliverycharges;
+            totalamt = amount;
+        } else {
+            for (let i = 1; i < delivery.length; i++) {
+                if (deliverytype == delivery[i].title) {
+                    let remdis = totaldistance - 5;
+                    basickm = 5;
+                    basicamt = settings[0].PerUnder5KM;
+                    aboveKmCharge = settings[0].addKmCharge2;
+                    extrakm = remdis;
+                    extraamt = (remdis * settings[0].PerKM) + aboveKmCharge;
+                    extadeliverycharges = delivery[i].cost;
+                    amount = basicamt + extraamt + extadeliverycharges;
+                    totalamt = amount;
+                }
+            }
+        }
+    }else if(totaldistance > settings[0].maxUnderKm){
+        return res.status(200).json({ IsSuccess: true , Data: [] , Message: "We Don't Deliver in this Area" });
     } else {
         if (deliverytype == "Normal Delivery") {
             let remdis = totaldistance - 5;
@@ -3252,7 +3298,7 @@ router.post("/cancelOrderV1", async function(req,res,next){
             }else if(diff < 0){
                 return res.status(200).json({ IsSuccess: true , Data: 1 ,Message: "Schedule Time Passed Away" });
             }else{
-                return res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Order Can't Deleted Before 15 Minutes of ScheduleTime" });
+                return res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Order Cannot be Deleted Before 15 Minutes of ScheduleTime" });
             }
         }
         return res.status(200).json({ IsSuccess: true , Data: 1 ,Message: "Order Deleted" });

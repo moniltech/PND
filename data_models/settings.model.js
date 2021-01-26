@@ -44,6 +44,9 @@ const orderSettingsSchema = mongoose.Schema({
   addKmCharge2: {
     type: Number,
   },
+  maxUnderKm: {
+    type: Number
+  }
 });
 
 module.exports = mongoose.model("Settings", orderSettingsSchema);
