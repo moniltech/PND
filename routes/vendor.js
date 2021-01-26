@@ -162,17 +162,17 @@ router.post("/VendorLogin", async function(req,res,next){
 router.post("/vendor_login" , async function(req , res, next){
     const { email, password } = req.body;
     
-    console.log(req.body);
+    // console.log(req.body);
     try {
         let userEmail = await vendorModelSchema.findOne({ email : email });
-        //console.log(userEmail.password);
+        // console.log(userEmail);
         if(!userEmail) {
-            return response.status(400).send({ message: "The username does not exist" });
+            return res.status(400).send({ message: "The username does not exist" });
         }
         if(!Bcrypt.compareSync(req.body.password, userEmail.password)) {
-            return response.status(400).send({ message: "The password is invalid" });
+            return res.status(400).send({ message: "The password is invalid" });
         }
-        res.status(200).send({ IsSuccess: true , message: "Vendor Logged In Successfull" });
+        res.status(200).send({ IsSuccess: true , Data: userEmail , message: "Vendor Logged In Successfull" });
     } catch (err) {
         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
     }
@@ -647,6 +647,26 @@ router.post("/getAllVendor", async function(req,res,next){
             res.status(200).json({ IsSuccess: true ,Count: vendorsAre.length ,Data: vendorsAre , Message: "Vendors Found" });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [] , Message: "Empty Vendors List" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+//Get Single Vendor Details -----------------------26/01/2021-------MONIL
+router.post("/getVendorDetails",async function(req,res,next){
+    try {
+        const { vendorId } = req.body;
+        let vendorDetails = await vendorModelSchema.aggregate([
+            { 
+                $match: { _id: mongoose.Types.ObjectId(vendorId) } 
+            }
+        ]);
+        // console.log(vendorDetails);
+        if(vendorDetails != null){
+            res.status(200).json({ IsSuccess: true , Data: vendorDetails , Message: "Vendor Data Found" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "No Vendor Found" });
         }
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });

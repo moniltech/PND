@@ -11,6 +11,7 @@ var customersRouter = require("./routes/customer");
 var courierRouter = require("./routes/courier");
 var orderRouter = require("./routes/order");
 var vendorRouter = require("./routes/vendor");
+// var fcmNotiCheck = require('./routes/fcmCheck');
  
 var app = express();
 app.use(cors());
@@ -31,6 +32,7 @@ app.use("/couriers", courierRouter);
 app.use("/orders", orderRouter);
 app.use("/admin", adminRouter);
 app.use("/vendor", vendorRouter);
+// app.use("/fcm", fcmNotiCheck);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
