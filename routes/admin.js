@@ -13,6 +13,7 @@ const { getDistance, convertDistance } = require("geolib");
 const geolib = require("geolib");
 const isEmpty = require('lodash.isempty');
 const moment = require('moment-timezone');
+const mongoose = require('mongoose');
 
 //Distance Calculations between two lat & long
 function calculatelocation(lat1, long1, lat2, long2) {
@@ -544,7 +545,25 @@ function multiDimensionalUnique(arr) {
     
 
 router.post("/orders_V1",async function(req,res,next){
+    console.log("sjdncjs");
     try {
+
+        const { orderId , noteToEmployee } = req.body;
+
+        let existOrderReq = await requestSchema.aggregate([
+            {
+                $match: { orderId: mongoose.Types.ObjectId(orderId) }
+            }
+        ]);
+        // console.log(existOrderReq);
+
+        if(existOrderReq.length == 1){
+            let updateIs = {
+                noteFromAdmin: noteToEmployee
+            }
+            let updateReq = await requestSchema.findByIdAndUpdate(existOrderReq[0]._id,updateIs);
+        }
+
         let mysort = { dateTime: -1 };
         
         let pendingOrders = await orderSchema
@@ -618,7 +637,7 @@ router.post("/orders_V1",async function(req,res,next){
             res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Single Delivery Orders Not Found" });
         }
     } catch (error) {
-        res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
+        res.status(500).json({ Message: error.message, Data: 0, IsSuccess: false });
     }
 });
 
@@ -654,7 +673,7 @@ router.post("/getMultiDeliveryCancelOrder", async function(req,res,next){
         }
 
     } catch (error) {
-        res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
+        res.status(500).json({ Message: error.message, Data: 0, IsSuccess: false });
     }
 });
 

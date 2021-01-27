@@ -26,6 +26,10 @@ const requestsSchema = mongoose.Schema({
     required: true,
     default: true,
   },
+  noteFromAdmin: {
+    type: String,
+    default: ""
+  }
 });
 
 module.exports = mongoose.model("requests", requestsSchema);
