@@ -545,24 +545,7 @@ function multiDimensionalUnique(arr) {
     
 
 router.post("/orders_V1",async function(req,res,next){
-    console.log("sjdncjs");
     try {
-
-        const { orderId , noteToEmployee } = req.body;
-
-        let existOrderReq = await requestSchema.aggregate([
-            {
-                $match: { orderId: mongoose.Types.ObjectId(orderId) }
-            }
-        ]);
-        // console.log(existOrderReq);
-
-        if(existOrderReq.length == 1){
-            let updateIs = {
-                noteFromAdmin: noteToEmployee
-            }
-            let updateReq = await requestSchema.findByIdAndUpdate(existOrderReq[0]._id,updateIs);
-        }
 
         let mysort = { dateTime: -1 };
         
@@ -2687,6 +2670,30 @@ router.post("/getAllExpenseData",async function(req,res,next){
             res.status(200).json({ IsSuccess: true , Data: expenseRecordAre , Message: "Category Found" });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [] , Message: "Category Not Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+router.post("/addEmployeeNotes",async function(req,res,next){
+    try {
+        const { orderId , noteToEmployee } = req.body;
+
+        let existOrderReq = await requestSchema.aggregate([
+            {
+                $match: { orderId: mongoose.Types.ObjectId(orderId) }
+            }
+        ]);
+        // console.log(existOrderReq);
+        if(existOrderReq.length == 1){
+            let updateIs = {
+                noteFromAdmin: noteToEmployee
+            }
+            let updateReq = await requestSchema.findByIdAndUpdate(existOrderReq[0]._id,updateIs);
+            res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Note Added for Employee" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Order Request Not Found" });
         }
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
