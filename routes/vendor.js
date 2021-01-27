@@ -462,6 +462,7 @@ router.post("/vendorOrder", orderimg.single("orderimg"), async function(req,res,
         // additionalAmount,
         // finalAmount,
         schedualDateTime,
+        dateTime,
     } = req.body;
     const file = req.file;
     let num = getVendorOrderNumber();
@@ -479,7 +480,8 @@ router.post("/vendorOrder", orderimg.single("orderimg"), async function(req,res,
                 deliveryType: deliveryType,
                 schedualDateTime: schedualDateTime,
                 weightLimit: weightLimit,
-                orderImg: file == undefined ? "" : file.path,
+                // orderImg: file == undefined ? "" : file.path,
+                dateTime: dateTime,
                 pickupPoint: {
                     name: pickData[0].name,
                     mobileNo: pickData[0].mobileNo,
@@ -796,6 +798,14 @@ router.post("/cancelVendorOrder", async function(req,res,next){
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }
 });
+
+router.post("/vendorOrderDashboard", async function(req,res,next){
+    try {
+        
+    } catch (error) {
+        res.status(500).json({ IsSuccess: true , Message: error.message });
+    }
+})
 
 router.post("/test",async function(req,res,next){
     let order = await demoOrderSchema.find({ multiOrderNo: "ORDMT-VND-8651810000" })

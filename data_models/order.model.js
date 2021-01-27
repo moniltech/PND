@@ -160,7 +160,8 @@ const orderSchema = mongoose.Schema({
         default: "customer"
     },
     noteByCustomer: {
-        type: String
+        type: String,
+        default: ""
     },
     extraKmByCourierBoy: {
         type: Number
