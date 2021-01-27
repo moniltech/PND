@@ -9,12 +9,13 @@ const fcm = config.firebase;
 const moment = require('moment');
 
 var Queue = require('bull');
-var notificationsQueue = new Queue('topic notifications', { redis: { port: 3000, host: 'http://localhost:3000/' } }); // Specify Redis connection using object
+var notificationsQueue = new Queue('topic notifications', { redis: { port: 3000, host: '192.168.56.1' } }); // Specify Redis connection using object
 
 const notificationsCollection = 'notifications';
 const donationsCollection = 'donations';
 
 router.post('/send/topic/:topic', (req, res) => {
+    // console.log("vfsrva====================");
     var topic = `/topics/${req.params.topic.toString()}`;
 
     var payload = {

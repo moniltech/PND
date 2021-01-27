@@ -10,6 +10,7 @@ var Bcrypt = require("bcryptjs");
 var mongoose = require("mongoose");
 var geolib = require("geolib");
 const moment = require('moment-timezone');
+var schedule = require('node-schedule');
 
 var vendorModelSchema = require("../data_models/vendor.model");
 var demoOrderSchema = require("../data_models/demoMultiModel");
@@ -164,15 +165,15 @@ router.post("/vendor_login" , async function(req , res, next){
     
     // console.log(req.body);
     try {
-        let userEmail = await vendorModelSchema.findOne({ email : email });
+        let userEmail = await vendorModelSchema.findOne({ email : email , isApprove: true });
         // console.log(userEmail);
         if(!userEmail) {
-            return res.status(400).send({ message: "The username does not exist" });
+            return res.status(200).json({ IsSuccess: true , Data: [] , message: "The username does not exist" });
         }
         if(!Bcrypt.compareSync(req.body.password, userEmail.password)) {
-            return res.status(400).send({ message: "The password is invalid" });
+            return res.status(200).json({ IsSuccess: true , Data: [] , message: "The password is invalid" });
         }
-        res.status(200).send({ IsSuccess: true , Data: userEmail , message: "Vendor Logged In Successfull" });
+        res.status(200).json({ IsSuccess: true , Data: userEmail , message: "Vendor Logged In Successfull" });
     } catch (err) {
         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
     }
@@ -540,23 +541,12 @@ router.post("/vendorOrdersList" , async function(req,res,next){
     const { vendorId , fromDate , ofDate } = req.body;
     
     try {
-        // let d1List = fromDate.split("/");
-        // let d2List = toDate.split("/");
 
-        // let date1 = d1List[2] + "-" + d1List[1] + "-" + d1List[0];
-        // let date2 = d2List[2] + "-" + d2List[1] + "-" + d2List[0];
-
-        // console.log(date1);
-        // console.log(date2);
-        // var daylist = getDaysArray(new Date(date1),new Date(date2));
-        // daylist.map((v)=>v.toISOString().slice(0,10)).join("");
-        // console.log(daylist);
         let orderData;
-        // console.log(isoDate1);
-        // console.log(isoDate2);
-        if(ofDate){
+        
+        if(ofDate && fromDate){
             let isoDate1 = convertStringDateToISO(ofDate);
-            let isoDate2 = convertStringDateToISOPlusOne(ofDate);
+            let isoDate2 = convertStringDateToISO(fromDate);
             
             console.log(isoDate1);
             console.log(isoDate2);
@@ -565,10 +555,21 @@ router.post("/vendorOrdersList" , async function(req,res,next){
                 vendorId: mongoose.Types.ObjectId(vendorId),
                 dateTime: {
                     $gte: isoDate1,
+                    $lte: isoDate2,
+                },
+            })
+        }else if(ofDate && fromDate == undefined){
+            let isoDate1 = convertStringDateToISO(ofDate);
+            let isoDate2 = convertStringDateToISOPlusOne(ofDate);
+
+            orderData = await demoOrderSchema.find({
+                vendorId: mongoose.Types.ObjectId(vendorId),
+                dateTime: {
+                    $gte: isoDate1,
                     $lt: isoDate2,
                 },
             })
-        }else{
+        } else{
             orderData = await demoOrderSchema.aggregate([
                 { 
                     $match : {
@@ -601,17 +602,27 @@ router.post("/vendorOrdersList" , async function(req,res,next){
         }
         let pndBillTotalCourierCharge = 0;
         let pndTotalVendorAmount = 0;
+        let TotalVendorAmountCollected = 0;
+        let TotalVendorCourierCharge = 0;
         
         for(let jk=0;jk<vendorOrderData.length;jk++){
             pndBillTotalCourierCharge = pndBillTotalCourierCharge + parseFloat(vendorOrderData[jk].CourierCharge);
             
             pndTotalVendorAmount = pndTotalVendorAmount + parseFloat(vendorOrderData[jk].VendorBill);
+
+            TotalVendorAmountCollected = TotalVendorAmountCollected + parseFloat(vendorOrderData[jk].VendorAmountCollect);
+            if(vendorOrderData[jk].CourierChargeCollectFromCustomerIs == false){
+                TotalVendorCourierCharge = TotalVendorCourierCharge + parseFloat(vendorOrderData[jk].CourierCharge);
+            }
         }
         // console.log(`Courier : ${pndBillTotalCourierCharge}`);
         // console.log(`Total Amount : ${pndTotalVendorAmount}`);
         if(vendorOrderData.length > 0){
             res.status(200).json({ 
                 IsSuccess: true,
+                TotalVendorAmountCollectedFromCustomer : TotalVendorAmountCollected,
+                TotalCourierChargeVendorPayIs: TotalVendorCourierCharge,
+                VendorNetAmount: parseFloat(TotalVendorAmountCollected) - parseFloat(TotalVendorCourierCharge),
                 PNDCourierCharge: pndBillTotalCourierCharge, 
                 PNDBill: pndTotalVendorAmount, 
                 DeliveryCount: orderData.length, 
@@ -677,7 +688,7 @@ router.post("/getVendorDetails",async function(req,res,next){
 
 //Get All Vendor Orders Listing
 router.post("/getAllVendorOrderListing",async function(req,res,next){
-    const { ofDate } = req.body;
+    const { ofDate , fromDate } = req.body;
     try {
         
         // let vendorOrderIs = await demoOrderSchema.find({ 
@@ -698,7 +709,21 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
             // console.log(vendorsData[j]._id);
             // vendorIds.push(vendorsData[j]._id);
             let orderIs;
-            if(ofDate){
+            if(ofDate && fromDate){
+                let isoDate1 = convertStringDateToISO(ofDate);
+                let isoDate2 = convertStringDateToISO(fromDate);
+                orderIs = await demoOrderSchema.find({ 
+                    vendorId: vendorsData[j]._id,
+                    dateTime: {
+                        $gte: isoDate1,
+                        $lte: isoDate2,
+                    }, 
+                })
+               .populate({
+                   path: "vendorId",
+                   select: "name mobileNo"
+               });
+            }else if(ofDate && fromDate == undefined){
                 let isoDate1 = convertStringDateToISO(ofDate);
                 let isoDate2 = convertStringDateToISOPlusOne(ofDate);
                 orderIs = await demoOrderSchema.find({ 
@@ -712,7 +737,7 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
                    path: "vendorId",
                    select: "name mobileNo"
                });
-            }else{
+            } else{
                 console.log("-------------------Here------------------------------------------")
                 orderIs = await demoOrderSchema.find({ 
                     vendorId: vendorsData[j]._id, 
@@ -761,7 +786,7 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
 
         // console.log(vendorOrderData);
         if(vendorOrderData.length > 0){
-            res.status(200).json({ IsSuccess: true , Data: vendorOrderData , Message: "All Vendor Orders Found" });
+            res.status(200).json({ IsSuccess: true , Count: vendorOrderData.length , Data: vendorOrderData , Message: "All Vendor Orders Found" });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [] , Message: "Orders Not Found" });
         }
@@ -807,12 +832,22 @@ router.post("/vendorOrderDashboard", async function(req,res,next){
     }
 })
 
-router.post("/test",async function(req,res,next){
-    let order = await demoOrderSchema.find({ multiOrderNo: "ORDMT-VND-8651810000" })
-    let date = order[0].dateTime
-    let b = convertISOToReadable(date);
-    console.log(b);
-});
+// router.post("/test",async function(req,res,next){
+//     scheduleSampleJob
+// });
+
+// let scheduleSampleJob = functions.https.onRequest((req , res) => {
+//     /*
+//         Say you very specifically want a function to execute at 5:30am on December 
+//         21, 2012. Remember - in JavaScript - 0 - January, 11 - December.
+//     */
+//     var date = new Date(2012, 11, 21, 5, 30, 0);  
+
+//     var j = schedule.scheduleJob(date, function(){
+//         console.log('The Task is executed');
+//     });
+//     return res.status(200).send(`Task has been scheduled`);
+// });
 
 //Convert ISO Time To Readable Time----06/01/2021---MONIL
 function convertISOToReadable(isoDate){
