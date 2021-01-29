@@ -8,6 +8,7 @@ var express = require("express");
 var config = require("../config");
 var router = express.Router();
 const mongoose = require("mongoose");
+const moment = require('moment-timezone');
 
 /* Creating FileUpload Path */
 var filestorage = multer.diskStorage({
@@ -39,6 +40,7 @@ var locationLoggerSchema = require("../data_models/location.logger.model");
 var poatypesSchema = require("../data_models/poatype.model");
 var prooftypeSchema = require("../data_models/prooftype.modal");
 var orderSchema = require("../data_models/order.model");
+let courierLeaveSchema = require('../data_models/courierLeaveModel');
 /* Routes. */
 router.get("/", function(req, res, next) {
     res.render("index", { title: "Invalid URL" });
@@ -927,6 +929,76 @@ router.post('/getOtp', (req, res, next) => {
         IsSuccess: true
     })
 })
+
+//Update Employee Data-----------------MONIL --- 29-01-2021
+router.post("/updateEmployee", async function(req,res,next){
+     try {
+         const { employeeId , isFixed , commission , netSalary } = req.body;
+         let existEmployee = await courierSchema.aggregate([
+             {
+                 $match: { _id: mongoose.Types.ObjectId(employeeId) }
+             }
+         ]);
+         if(existEmployee.length == 1){
+            let updateIs;
+            if(isFixed == false){
+                updateIs = {
+                    isFixed: isFixed,
+                    commission: commission
+                }
+            }else{
+                updateIs = {
+                    isFixed: isFixed,
+                    commission: commission,
+                    netSalary: netSalary
+                }
+            }
+            let updateEmp = await courierSchema.findByIdAndUpdate(employeeId,updateIs);
+            res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Employee Data Updated" });
+         }else{
+             res.status(200).json({ IsSuccess: true , Data: [] , Message: `No Employee Found at ${employeeId} Id` });
+         }
+     } catch (error) {
+         res.status(500).json({ IsSuccess: false , Message: error.message });
+     }
+});
+
+//Employee Leave Application -----------MONIL-----29-01-2021
+router.post("/addLeaveApplication", async function(req,res,next){
+    try {
+        const { employeeId , fromDate , toDate , reason , discription } = req.body;
+        let dateTime =  moment()
+                            .tz("Asia/Calcutta")
+                            .format('DD/MM/YYYY , h:mm:ss a');
+
+        let existEmployee = await courierSchema.aggregate([
+                                {
+                                    $match: { _id: mongoose.Types.ObjectId(employeeId) }
+                                }
+                            ]);
+        if(existEmployee.length == 1){
+            let addLeave = await new courierLeaveSchema({
+                employeeId: employeeId,
+                fromDate: fromDate,
+                toDate: toDate,
+                reason: reason,
+                discription: discription,
+                leaveApplyDate: dateTime.split(',')[0],
+                leaveApplyTime: dateTime.split(',')[1],
+            });
+            if(addLeave != null){
+                addLeave.save();
+                res.status(200).json({ IsSuccess: true , Data: [addLeave] , Message: "Leave Apply Successfull waiting for admin approval" });
+            }else{
+                res.status(200).json({ IsSuccess: true , Data: [] , Message: "Leave Application Failed" });
+            }
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "No Employee Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
 
 async function sendPopupNotification(fcmtoken, title, body, data) {
     let payload = { notification: { title: title, body: body }, data: data };

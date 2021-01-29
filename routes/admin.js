@@ -132,6 +132,7 @@ var ecommOrderSchema = require('../data_models/ecommModel');
 const vendorModel = require("../data_models/vendor.model");
 var expenseSchema = require('../data_models/expenseCategory');
 var expenseEntrySchema = require('../data_models/expenseEntry');
+let courierLeaveSchema = require('../data_models/courierLeaveModel');
 
 async function currentLocation(id) {
     var CourierRef = config.docref.child(id);
@@ -2702,7 +2703,36 @@ router.post("/addEmployeeNotes",async function(req,res,next){
     }
 });
 
-// router.post("/deleteRequest")
+// Leave Approval -------------MONIL-----------29/01/2021
+router.post("/leaveUpdate", async function(req,res,next){
+    try {
+        const { leaveId , isApprove } = req.body;
+        let existLeaveApplication = await courierLeaveSchema.aggregate([
+            {
+                $match: { _id: mongoose.Types.ObjectId(leaveId) }
+            }
+        ]);
+        if(existLeaveApplication.length == 1){
+            let update;
+            if(isApprove == true){
+                update = {
+                    isApprove: false
+                }
+            }else{
+                update = {
+                    isApprove: true
+                }
+            }
+            // console.log(update);
+            let updateLeave = await courierLeaveSchema.findByIdAndUpdate(leaveId,update);
+            res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Leave Updated" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "No Leave Data Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
 
 function convertStringDateToISO(date){
     var dateList = date;

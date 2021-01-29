@@ -98,6 +98,18 @@ const courierSchema = mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  isFixed: {
+    type: Boolean,
+    default: false
+  },
+  commission: {
+    type: Number,
+    default: 0 
+  },
+  netSalary: {
+    type: Number,
+    default: 0
+  }
 });
 
 module.exports = mongoose.model("Couriers", courierSchema);
