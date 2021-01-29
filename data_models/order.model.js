@@ -84,6 +84,21 @@ const orderSchema = mongoose.Schema({
             type: Number,
             required: true,
         },
+        vendorBillAmount: {
+            type: Number,
+            default: 0,
+        },
+        customerCourierCharge: {
+            type: Number,
+            default: 0,
+        },
+        vendorBillFinalAmount: {
+            type: Number,
+            default: 0,
+        },
+        courierChargeCollectFromCustomer: {
+            type: Boolean
+        }
     },
     collectCash: {
         type: String,

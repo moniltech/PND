@@ -645,11 +645,13 @@ router.post("/getMultiDeliveryCancelOrder", async function(req,res,next){
             }
         }
 
+        let uniqueCancelOrder = multiDimensionalUnique(cancelMultiOrder);
+
         if(cancelMultiOrder.length > 0){
             res.status(200).json({ 
                                     IsSuccess: true ,
-                                    CancelOrderCount: cancelMultiOrder.length, 
-                                    Data: cancelMultiOrder , 
+                                    CancelOrderCount: uniqueCancelOrder.length, 
+                                    Data: uniqueCancelOrder , 
                                     Message: "Canceled Single Orders Found" });
         }else{
             res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Canceled Single Orders Not Found" });
