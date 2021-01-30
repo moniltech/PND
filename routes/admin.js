@@ -130,9 +130,10 @@ var orderCancelSchema = require("../data_models/orderCancelReason");
 var sumulOrderSchema = require('../data_models/sumulOrderModel');
 var ecommOrderSchema = require('../data_models/ecommModel');
 const vendorModel = require("../data_models/vendor.model");
-var expenseSchema = require('../data_models/expenseCategory');
-var expenseEntrySchema = require('../data_models/expenseEntry');
-let courierLeaveSchema = require('../data_models/courierLeaveModel');
+const expenseSchema = require('../data_models/expenseCategory');
+const expenseEntrySchema = require('../data_models/expenseEntry');
+const courierLeaveSchema = require('../data_models/courierLeaveModel');
+const courierSalarySchema = require('../data_models/employeeSalaryModel');
 
 async function currentLocation(id) {
     var CourierRef = config.docref.child(id);
@@ -2800,14 +2801,6 @@ router.post("/checkEmployeeStatus", async function(req,res,next){
 
             console.log(daylist);
 
-            // console.log(dateTime.toString());
-            // console.log(date);
-            // let a = '30/01/2021';
-            // if(a === date){
-            //     console.log("adcsa");
-            // }else{
-            //     console.log("===============================");
-            // }
             for(let i=0;i<daylist.length;i++){
                 if(dateTime == daylist[i]){
                     console.log("i================n");
@@ -2829,16 +2822,34 @@ router.post("/checkEmployeeStatus", async function(req,res,next){
     }
 });
 
-router.post("/tets", async function(req,res,next){
-    let dateTime =  moment()
+//Add Employee Salary ----------------------MONIL ------------30/01/2021
+router.post("/addEmpSalary", async function(req,res,next){
+    try {
+        const { employeeId , amountPaid , note , remainingAmount } = req.body;
+        let dateTime = moment()
                         .tz("Asia/Calcutta")
-                        .format('DD/MM/YYYY , h:mm:ss a');
+                        .format('DD/MM/YYYY, h:mm:ss a')
+                        .split(',');
 
-        let d1 = dateTime.split(',')[0];
-        d1 = d1.split('/');
-        console.log(d1);
-        let date = d1[0] + "/" + d1[1] + "/" + d1[2]
-        console.log(date);
+        // let date = dateTime.split('')
+        
+        let addSalaryRecord = await new courierSalarySchema({
+            employeeId: employeeId,
+            amountPaid: amountPaid,
+            note: note,
+            remainingAmount: remainingAmount != undefined ? remainingAmount : 0,
+            date: dateTime[0],
+            time: dateTime[1],
+        });
+        if(addSalaryRecord != null){
+            addSalaryRecord.save();
+            res.status(200).json({ IsSuccess: true , Data: [addSalaryRecord] , Message: "Salary Record Added" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Salary Record Not Added" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
 });
 
 function generateDateList(start, end) {

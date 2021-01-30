@@ -401,33 +401,6 @@ router.post("/sendNotification", async function(req, res, next) {
     }
 });
 
-function convertStringDateToISO(date){
-    var dateList = date;
-    // console.log(dateList.split("/"));
-    let list = dateList.split("/");
-    
-    let dISO = list[2] + "-" + list[1] + "-" + list[0] + "T" + "00:00:00.00Z";
-    // console.log(dISO);
-    return dISO;
-}
-
-function convertStringDateToISOPlusOne(date){
-    var dateList = date;
-    // console.log(dateList.split("/"));
-    let list = dateList.split("/");
-    let datee = parseFloat(list[0]) + 1;
-    
-    // console.log(datee);
-    if(datee < 10){
-        datee = "0" + String(datee); 
-    }
-    // console.log(datee);
-
-    let dISO = list[2] + "-" + list[1] + "-" + datee + "T" + "00:00:00.00Z";
-    // console.log(dISO);
-    return dISO;
-}
-
 //Get Employee All Orders -------31-12-2020----MONIL
 router.post("/getEmpAllOrders", async function(req,res,next){
     const { courierId } = req.body;
@@ -752,10 +725,7 @@ router.post("/getAllEmployeeOrders", async function(req,res,next){
                     TotalPrice = TotalPrice + parseFloat(record[k].finalAmount);
                     TotalDistance = TotalDistance + parseFloat(record[k].deliveryPoint.distance);
                 }
-                // console.log(Amount);
-                // console.log(ThirdPartyCollection);
-                // console.log(TotalPrice);
-                // console.log(TotalDistance);
+               
                 var data = {
                     EmployeeId : record[0].courierId[0]._id,
                     EmployeeName : record[0].courierId[0].firstName + " "+ record[0].courierId[0].lastName,
@@ -933,7 +903,7 @@ router.post('/getOtp', (req, res, next) => {
 //Update Employee Data-----------------MONIL --- 29-01-2021
 router.post("/updateEmployee", async function(req,res,next){
      try {
-         const { employeeId , isFixed , commission , netSalary } = req.body;
+         const { employeeId , isFixed , chargePercentPerDelivery , netSalary } = req.body;
          let existEmployee = await courierSchema.aggregate([
              {
                  $match: { _id: mongoose.Types.ObjectId(employeeId) }
@@ -944,12 +914,12 @@ router.post("/updateEmployee", async function(req,res,next){
             if(isFixed == false){
                 updateIs = {
                     isFixed: isFixed,
-                    commission: commission
+                    netSalary: 0,
+                    chargePercentPerDelivery: chargePercentPerDelivery
                 }
             }else{
                 updateIs = {
                     isFixed: isFixed,
-                    commission: commission,
                     netSalary: netSalary
                 }
             }
@@ -999,6 +969,101 @@ router.post("/addLeaveApplication", async function(req,res,next){
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }
 });
+
+//Calculate Income of Date ----------------MONIL----------30/01/2021
+router.post("/calculateIncome", async function(req,res,next){
+    try {
+        const { employeeId , fromDate , toDate } = req.body;
+
+        let date1 =  moment(convertStringDateToISO(fromDate))
+                    .tz("Asia/Calcutta")
+                    .format('YYYY-MM-DD,h:mm:ss a').split(',')[0];
+        
+        let date2;
+        if(toDate){
+            date2 =  moment(convertStringDateToISO(toDate))
+                    .tz("Asia/Calcutta")
+                    .format('YYYY-MM-DD,h:mm:ss a').split(',')[0];
+            
+            date2 = new Date(date2);
+        }
+
+        date1 = new Date(date1);
+
+        let date3 = convertStringDateToISOPlusOne(fromDate);
+        date3 = new Date(date3);
+
+        let employeeOrdersAre;
+
+        if(toDate != undefined && fromDate != undefined){
+            employeeOrdersAre = await orderSchema.aggregate([
+                {
+                    $match: { 
+                        courierId: { $in: [mongoose.Types.ObjectId(employeeId)] } , 
+                        status: "Order Delivered", 
+                        isActive: false,
+                        dateTime: {
+                            $gte : date1,
+                            $lte : date2
+                        },
+                    }
+                }
+            ]);
+        }else if(fromDate && toDate == undefined){
+            employeeOrdersAre = await orderSchema.aggregate([
+                {
+                    $match: { 
+                        courierId: { $in: [mongoose.Types.ObjectId(employeeId)] } , 
+                        status: "Order Delivered", 
+                        isActive: false,
+                        dateTime: {
+                            $gte : date1,
+                            $lt : date3
+                        },
+                    }
+                }
+            ]);
+        }else{
+            return res.status(200).json({ IsSuccess: false , Message: "Please valid Dates" });
+        }
+        
+        if(employeeOrdersAre.length > 0){
+            res.status(200).json({ IsSuccess: true , Count: employeeOrdersAre.length , Data: employeeOrdersAre , Message: "Orders Found" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Orders Not Found" });
+        }
+
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+function convertStringDateToISO(date){
+    var dateList = date;
+    // console.log(dateList.split("/"));
+    let list = dateList.split("/");
+    
+    let dISO = list[2] + "-" + list[1] + "-" + list[0] + "T" + "00:00:00.00Z";
+    // console.log(dISO);
+    return dISO;
+}
+
+function convertStringDateToISOPlusOne(date){
+    var dateList = date;
+    // console.log(dateList.split("/"));
+    let list = dateList.split("/");
+    let datee = parseFloat(list[0]) + 1;
+    
+    // console.log(datee);
+    if(datee < 10){
+        datee = "0" + String(datee); 
+    }
+    // console.log(datee);
+
+    let dISO = list[2] + "-" + list[1] + "-" + datee + "T" + "00:00:00.00Z";
+    // console.log(dISO);
+    return dISO;
+}
 
 async function sendPopupNotification(fcmtoken, title, body, data) {
     let payload = { notification: { title: title, body: body }, data: data };

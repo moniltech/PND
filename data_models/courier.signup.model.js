@@ -102,7 +102,7 @@ const courierSchema = mongoose.Schema({
     type: Boolean,
     default: false
   },
-  commission: {
+  chargePercentPerDelivery: {
     type: Number,
     default: 0 
   },
