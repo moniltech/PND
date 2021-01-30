@@ -2703,6 +2703,25 @@ router.post("/addEmployeeNotes",async function(req,res,next){
     }
 });
 
+//Get All Leave Applications----------------MONIL-------30/01/2021
+router.post("/getAllLeaveApplications", async function(req,res,next){
+    try {
+        let leaveApplications = await courierLeaveSchema.find()
+                                                        .populate({
+                                                            path: "employeeId",
+                                                            select: "cId firstName lastName mobileNo"
+                                                        });
+        // console.log(leaveApplications);
+        if(leaveApplications.length > 0){
+            res.status(200).json({ IsSuccess: true , Count: leaveApplications.length , Data: leaveApplications , Message: "Leave Applications Found" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "No Leave Applications Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
 // Leave Approval -------------MONIL-----------29/01/2021
 router.post("/leaveUpdate", async function(req,res,next){
     try {
@@ -2733,6 +2752,148 @@ router.post("/leaveUpdate", async function(req,res,next){
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }
 });
+
+//check employeee Leave Status-------------MONIL ---------30/01/2021
+router.post("/checkEmployeeStatus", async function(req,res,next){
+    try {
+        const { employeeId } = req.body;
+
+        let dateTime =  moment()
+                        .tz("Asia/Calcutta")
+                        .format('DD/MM/YYYY,h:mm:ss a')
+                        .split(',')[0];
+
+        // let d1 = dateTime.split(',')[0];
+        // d1 = d1.split('/');
+        // console.log(d1);
+        // let date = d1[0] + "/" + d1[1] + "/" + d1[2]
+        // console.log(date);
+                        // .split(',')[0];
+
+        // console.log(dateTime);
+         
+        let employeeLeaveCheck = await courierLeaveSchema.aggregate([
+            {
+                $match: { employeeId: mongoose.Types.ObjectId(employeeId) }
+            }
+        ]);
+
+        let isLeave = false;
+
+        // employeeLeaveCheck.forEach();
+        for(let i=0;i<employeeLeaveCheck.length;i++){
+            let fromDate = employeeLeaveCheck[i].fromDate;
+            let toDate = employeeLeaveCheck[i].toDate;
+
+            fromDate = moment(convertDateFromart(fromDate))
+                        .tz("Asia/Calcutta")
+                        .format('YYYY-MM-DD , h:mm:ss a')
+                        .split(',')[0];
+
+            toDate = moment(convertDateFromart(toDate))
+            .tz("Asia/Calcutta")
+            .format('YYYY-MM-DD , h:mm:ss a')
+            .split(',')[0];
+
+            var daylist = generateDateList(new Date(fromDate),new Date(toDate));
+            // daylist.map((v)=>v.toISOString().slice(0,10)).join("");
+
+            console.log(daylist);
+
+            // console.log(dateTime.toString());
+            // console.log(date);
+            // let a = '30/01/2021';
+            // if(a === date){
+            //     console.log("adcsa");
+            // }else{
+            //     console.log("===============================");
+            // }
+            for(let i=0;i<daylist.length;i++){
+                if(dateTime == daylist[i]){
+                    console.log("i================n");
+                    isLeave = true;
+                    break;
+                }
+            }
+            // console.log(isLeave);
+        }
+        console.log(isLeave);
+        if(isLeave === true){
+            return res.status(200).json({ IsSuccess: true , Data: employeeLeaveCheck , Message: "You Are On Leave" });
+        }else{
+            return res.status(200).json({ IsSuccess: true , Data: employeeLeaveCheck , Message: "You Are On Duty" });
+        } 
+        
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+router.post("/tets", async function(req,res,next){
+    let dateTime =  moment()
+                        .tz("Asia/Calcutta")
+                        .format('DD/MM/YYYY , h:mm:ss a');
+
+        let d1 = dateTime.split(',')[0];
+        d1 = d1.split('/');
+        console.log(d1);
+        let date = d1[0] + "/" + d1[1] + "/" + d1[2]
+        console.log(date);
+});
+
+function generateDateList(start, end) {
+    for(var arr=[],dt=new Date(start); dt<=end; dt.setDate(dt.getDate()+1)){
+        let temp = moment(dt)
+                        .tz("Asia/Calcutta")
+                        .format('DD/MM/YYYY, h:mm:ss a')
+                        .split(',')[0];
+        arr.push(temp);
+        // console.log(temp);
+    }
+    return arr;
+};
+
+// function generateDateList(from, to) {
+
+//     var getDate = function(date) { //Mysql Format
+//         var m = date.getMonth(), d = date.getDate();
+//         return date.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
+//     }
+//     var fs = from.split('-'), startDate = new Date(fs[0], fs[1], fs[2]), result = [getDate(startDate)], start = startDate.getTime(), ts, end;
+
+//     if ( typeof to == 'undefined') {
+//         end = new Date().getTime();
+//     } else {
+//         ts = to.split('-');
+//         end = new Date(ts[0], ts[1], ts[2]).getTime();
+//     }
+//     while (start < end) {
+//         start += 86400000;
+//         startDate.setTime(start);
+//         result.push(getDate(startDate));
+//     }
+//     return result;
+// }
+
+function convertDateFromartList(dateList){
+    let convertListIs = [];
+    for(let i=0;i<dateList.length;i++){
+        let datecheck = dateList[i];
+        let dateListIs = datecheck.split("-");
+        let convertedDateIs = dateListIs[2] + "/" + dateListIs[1] + "/" + dateListIs[0];
+        convertListIs.push(convertedDateIs);
+    }
+    
+    // console.log(convertListIs);
+
+    return convertListIs;
+}
+
+function convertDateFromart(d1){
+    let dateList = d1.split('/');
+    let convertedDateIs = dateList[2] + "-" + dateList[1] + "-" + dateList[0];
+    return convertedDateIs;
+}
 
 function convertStringDateToISO(date){
     var dateList = date;
