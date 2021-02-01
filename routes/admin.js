@@ -2733,16 +2733,10 @@ router.post("/leaveUpdate", async function(req,res,next){
             }
         ]);
         if(existLeaveApplication.length == 1){
-            let update;
-            if(isApprove == true){
-                update = {
-                    isApprove: false
-                }
-            }else{
-                update = {
-                    isApprove: true
-                }
-            }
+            let update  = {
+                isApprove: isApprove
+            };
+
             // console.log(update);
             let updateLeave = await courierLeaveSchema.findByIdAndUpdate(leaveId,update);
             res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Leave Updated" });
