@@ -981,7 +981,7 @@ router.post("/calculateIncome", async function(req,res,next){
         
         let date2;
         if(toDate){
-            date2 =  moment(convertStringDateToISO(toDate))
+            date2 =  moment(convertStringDateToISOPlusOne(toDate))
                     .tz("Asia/Calcutta")
                     .format('YYYY-MM-DD,h:mm:ss a').split(',')[0];
             
@@ -995,6 +995,15 @@ router.post("/calculateIncome", async function(req,res,next){
 
         let employeeOrdersAre;
 
+        let employeeData = await courierSchema.aggregate([
+            {
+                $match: { _id: mongoose.Types.ObjectId(employeeId) }
+            }
+        ]);
+        // console.log(employeeData);
+        // console.log(date1);
+        // console.log(date2);
+
         if(toDate != undefined && fromDate != undefined){
             employeeOrdersAre = await orderSchema.aggregate([
                 {
@@ -1004,7 +1013,7 @@ router.post("/calculateIncome", async function(req,res,next){
                         isActive: false,
                         dateTime: {
                             $gte : date1,
-                            $lte : date2
+                            $lt : date2
                         },
                     }
                 }
@@ -1024,11 +1033,37 @@ router.post("/calculateIncome", async function(req,res,next){
                 }
             ]);
         }else{
-            return res.status(200).json({ IsSuccess: false , Message: "Please valid Dates" });
+            return res.status(200).json({ IsSuccess: false , Message: "Please Enter valid Dates" });
         }
-        
+
+        let empFinalIncome;
+        let totalAmountCollected = 0;
+
+        for(let j=0;j<employeeOrdersAre.length;j++){
+            totalAmountCollected = totalAmountCollected + parseFloat(employeeOrdersAre[j].finalAmount);
+        }
+        console.log(totalAmountCollected);
+        if(employeeData.length == 1){
+            let empSalaryType = employeeData[0].isFixed;
+            if(empSalaryType == false){
+                let empCommission = parseFloat(employeeData[0].chargePercentPerDelivery);
+                let empTotalDelivery = employeeOrdersAre.length;
+                let temp = empCommission / 100;
+                empFinalIncome = parseFloat(totalAmountCollected) *  parseFloat(temp);
+            }else{
+                empFinalIncome = employeeData[0].netSalary;
+            }    
+        }
+        console.log(empFinalIncome);
         if(employeeOrdersAre.length > 0){
-            res.status(200).json({ IsSuccess: true , Count: employeeOrdersAre.length , Data: employeeOrdersAre , Message: "Orders Found" });
+            res.status(200).json({ 
+                IsSuccess: true, 
+                TotalDelivery: employeeOrdersAre.length,
+                TotalAmountCollected: totalAmountCollected,
+                FinalIncome: empFinalIncome, 
+                Data: employeeOrdersAre, 
+                Message: "Orders Found" 
+            });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [] , Message: "Orders Not Found" });
         }
