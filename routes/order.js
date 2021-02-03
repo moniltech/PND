@@ -298,27 +298,49 @@ function getOrderNumber() {
     let orderNo = "ORD-" + Math.floor(Math.random() * 90000) + 10000;
     return orderNo;
 }
-// send sms
-function sendMessages(mobileNo, message) {
-    // let msgportal =
-    //     "http://promosms.itfuturz.com/vendorsms/pushsms.aspx?user=" +
-    //     process.env.SMS_USER +
-    //     "&password=" +
-    //     process.env.SMS_PASS +
-    //     "&msisdn=" +
-    //     mobileNo +
-    //     "&sid=" +
-    //     process.env.SMS_SID +
-    //     "&msg=" +
-    //     message +
-    //     "&fl=0&gwid=2";
-    // console.log("xs------------------------------");
+// // send sms
+// function sendMessages(mobileNo, message) {
+//     // let msgportal =
+//     //     "http://promosms.itfuturz.com/vendorsms/pushsms.aspx?user=" +
+//     //     process.env.SMS_USER +
+//     //     "&password=" +
+//     //     process.env.SMS_PASS +
+//     //     "&msisdn=" +
+//     //     mobileNo +
+//     //     "&sid=" +
+//     //     process.env.SMS_SID +
+//     //     "&msg=" +
+//     //     message +
+//     //     "&fl=0&gwid=2";
+//     // console.log("xs------------------------------");
+//     let msgportal = "http://websms.mitechsolution.com/api/push.json?apikey=" + process.env.SMS_API + "&route=vtrans&sender=PNDDEL&mobileno=" + mobileNo + "&text= " + message;
+//     console.log("--------------------SEND TEXT---------------------------");
+//     console.log(msgportal);
+//     axios.get(msgportal);
+//     var data = axios.get(msgportal);
+//     return data;
+// }
+
+// send sms-------------MONIL
+async function sendMessages(mobileNo, message) {
     let msgportal = "http://websms.mitechsolution.com/api/push.json?apikey=" + process.env.SMS_API + "&route=vtrans&sender=PNDDEL&mobileno=" + mobileNo + "&text= " + message;
-    console.log("--------------------SEND TEXT---------------------------");
-    console.log(msgportal);
-    axios.get(msgportal);
-    var data = axios.get(msgportal);
-    return data;
+    
+    try {
+        await axios.get(msgportal)
+            .then(resp=>{
+                // console.log("===========================================================================");
+                console.log(resp.data);
+            })  
+            .catch(error=>{
+                // console.log("=========================  ERROR  ==================================================");
+            
+                console.log(error.response.data);
+            });;
+        var data = await axios.get(msgportal);
+        return data;    
+    } catch (error) {
+        return 0;    
+    }
 }
 
 router.post("/sendText", async function(req,res,next){

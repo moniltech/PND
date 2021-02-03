@@ -11,13 +11,169 @@ var mongoose = require("mongoose");
 var geolib = require("geolib");
 const moment = require('moment-timezone');
 var schedule = require('node-schedule');
+var arraySort = require("array-sort");
+var request = require('request');
 
-var vendorModelSchema = require("../data_models/vendor.model");
-var demoOrderSchema = require("../data_models/demoMultiModel");
+let vendorModelSchema = require("../data_models/vendor.model");
+let demoOrderSchema = require("../data_models/demoMultiModel");
 let promoCodeSchema = require("../data_models/promocode.model");
 let settingsSchema = require("../data_models/settings.model");
 let deliverytypesSchema = require("../data_models/deliverytype.model");
+let requestSchema = require("../data_models/order.request.model");
+let ExtatimeSchema = require("../data_models/extratime.model");
+let customerSchema = require("../data_models/customer.signup.model");
+let usedpromoSchema = require("../data_models/used.promocode.model");
+let locationLoggerSchema = require("../data_models/location.logger.model");
+let courierSchema = require("../data_models/courier.signup.model");
 
+async function currentLocation(courierId) {
+    console.log(courierId);
+    var CourierRef = config.docref.child(courierId);
+    const data = await CourierRef.once("value")
+        .then((snapshot) => snapshot.val())
+        .catch((err) => err);
+    // console.log("---------");
+    // // console.log(data);
+    // console.log("---------");
+    return data;
+}
+
+async function GoogleMatrix(fromlocation, tolocation) {
+    let link =
+        "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&mode=driving&origins=" +
+        fromlocation.latitude +
+        "," +
+        fromlocation.longitude +
+        "&destinations=" +
+        tolocation.latitude +
+        "," +
+        tolocation.longitude +
+        "&key=" +
+        process.env.GOOGLE_API;
+    let results = await axios.get(link);
+    let distancebe = results.data.rows[0].elements[0].distance.value;
+    // console.log(distancebe + " Meter");
+    return distancebe / 1000;
+}
+
+async function PNDfinder(pickuplat, pickuplong, orderid, deliveryType) {
+    let available = [];
+    let getpndpartners = await courierSchema
+        .find({
+            isActive: true,
+            isVerified: true,
+            "accStatus.flag": true,
+        })
+        .select("id fcmToken");
+    console.log("-------------Get PND Partner-----------------------------------");
+    // console.log(getpndpartners);
+
+    if (deliveryType == "Normal Delivery") {
+        for (let i = 0; i < getpndpartners.length; i++) {
+            let partnerlocation = await currentLocation(getpndpartners[i].id);
+            if (
+                (partnerlocation.duty == "ON") &
+                (Number(partnerlocation.parcel) < 3)
+            ) {
+                if(partnerlocation.latitude != null && partnerlocation.longitude != null){
+                
+                    let totalrequests = await requestSchema.countDocuments({
+                        orderId: orderid,
+                    });
+                    let partnerrequest = await requestSchema.find({
+                        courierId: getpndpartners[i].id,
+                        orderId: orderid,
+                    });
+                    if (totalrequests <= 4) {
+                        if (partnerrequest.length == 0) {
+                            let pickupcoords = { latitude: pickuplat, longitude: pickuplong };
+                            let partnercoords = {
+                                latitude: partnerlocation.latitude == null ? "" : partnerlocation.latitude,
+                                longitude: partnerlocation.longitude == null ? "" : partnerlocation.longitude,
+                            };
+                            // console.log(partnerlocation);
+                            // console.log(pickupcoords, partnercoords)
+                            let distancebtnpp = await GoogleMatrix(pickupcoords, partnercoords);
+                            // console.log("Distacnwe: "+distancebtnpp);
+                            if (distancebtnpp <= 15) {
+                                available.push({
+                                    courierId: getpndpartners[i].id,
+                                    orderId: orderid,
+                                    distance: distancebtnpp,
+                                    status: "Pending",
+                                    fcmToken: getpndpartners[i].fcmToken,
+                                    reason: "",
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // console.log("ifffffffffff Normal");
+        // console.log(available);
+    } else {
+        for (let i = 0; i < getpndpartners.length; i++) {
+            let partnerlocation = await currentLocation(getpndpartners[i].id);
+            if (
+                (partnerlocation.duty == "ON") &
+                (Number(partnerlocation.parcel) == 0)
+            ) {
+                let totalrequests = await requestSchema.countDocuments({
+                    orderId: orderid,
+                });
+                let partnerrequest = await requestSchema.find({
+                    courierId: getpndpartners[i].id,
+                    orderId: orderid,
+                });
+                if (totalrequests <= 4) {
+                    if (partnerrequest.length == 0) {
+                        let pickupcoords = { latitude: pickuplat, longitude: pickuplong };
+                        let partnercoords = {
+                            latitude: partnerlocation.latitude,
+                            longitude: partnerlocation.longitude,
+                        };
+                        let distancebtnpp = await GoogleMatrix(pickupcoords, partnercoords);
+                        if (distancebtnpp <= 15) {
+                            available.push({
+                                courierId: getpndpartners[i].id,
+                                orderId: orderid,
+                                distance: distancebtnpp,
+                                status: "Pending",
+                                fcmToken: getpndpartners[i].fcmToken,
+                                reason: "",
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    console.log("==================================Return==========================");
+    // console.log(available);
+    return available;
+}
+
+// send sms
+async function sendMessages(mobileNo, message) {
+    let msgportal = "http://websms.mitechsolution.com/api/push.json?apikey=" + process.env.SMS_API + "&route=vtrans&sender=PNDDEL&mobileno=" + mobileNo + "&text= " + message;
+
+    try {
+        await axios.get(msgportal)
+            .then(resp=>{
+                // console.log("===========================================================================");
+                console.log(resp.data);
+            })  
+            .catch(error=>{
+                // console.log("=========================  ERROR  ==================================================");
+                console.log(error.response.data);
+            });;
+        var data = await axios.get(msgportal);
+        return data;    
+    } catch (error) {
+        return 0;    
+    }
+}
 var imguploader = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "uploads/orderimg");
@@ -519,9 +675,194 @@ router.post("/vendorOrder", orderimg.single("orderimg"), async function(req,res,
                 note: "Your order is processing!",
             });
             var placeMultiOrder = await newVendorMultiOrder.save();
+            // var placeMultiOrder = newVendorMultiOrder;
             vendorOrders.push(placeMultiOrder);   
         }
+        let newOrderCustomer = await vendorModelSchema.find({ _id: vendorId });
+
+        // console.log(newOrderCustomer[0].gpsLocation.lat);
+        // console.log(newOrderCustomer[0].gpsLocation.long);
+        let pkLat = parseFloat(newOrderCustomer[0].gpsLocation.lat);
+        let pkLong = parseFloat(newOrderCustomer[0].gpsLocation.long);
+
+        console.log(pkLat);
+        console.log(pkLong);
+
+        if(!pkLat && !pkLong){
+            console.log("============================Manual Assign========================================");
+            if(vendorOrders.length > 0){
+                return res.status(200).json({ IsSuccess: true , Data: vendorOrders , Message: "Vendor Orders Found" });
+            }else{
+                return res.status(200).json({ IsSuccess: true , Data: [] , Message: "Vendor Orders Not Placed" });
+            }
+        }
+
+        var avlcourier = await PNDfinder(
+            pkLat,
+            pkLong,
+            placeMultiOrder.id,
+            placeMultiOrder.deliveryType
+        );
+        if (promoCode != "0") {
+            let usedpromo = new usedpromoSchema({
+                _id: new config.mongoose.Types.ObjectId(),
+                customer: customerId,
+                code: promoCode,
+            });
+            usedpromo.save();
+        }
+        
         if(vendorOrders.length > 0){
+            if (placeMultiOrder != null && avlcourier.length != 0) {
+                console.log("Total Found:" + avlcourier.length);
+                let courierfound = arraySort(avlcourier, "distance");
+                var newrequest = new requestSchema({
+                    _id: new config.mongoose.Types.ObjectId(),
+                    courierId: courierfound[0].courierId,
+                    orderId: courierfound[0].orderId,
+                    distance: courierfound[0].distance,
+                    status: courierfound[0].status,
+                    reason: courierfound[0].reason,
+                    fcmToken: courierfound[0].fcmToken,
+                });
+                await newrequest.save();
+                var AdminMobile = await settingsSchema.find({}).select('AdminMObile1 AdminMObile2 AdminMObile3 AdminMObile4 AdminMObile5 -_id');
+                console.log("Admin numbers-------------------------------------------------");
+                console.log(AdminMobile);
+                var AdminNumber1 = AdminMobile[0].AdminMObile1; 
+                var AdminNumber2 = AdminMobile[0].AdminMObile2; 
+                var AdminNumber3 = AdminMobile[0].AdminMObile3; 
+                var AdminNumber4 = AdminMobile[0].AdminMObile4; 
+                var AdminNumber5 = AdminMobile[0].AdminMObile5;
+        
+                // console.log(AdminNumber1);
+    
+                var findAdminFcmToken = await customerSchema.find({ mobileNo: AdminNumber1 }).select('fcmToken -_id');
+                var findAdminFcmToken2 = await customerSchema.find({ mobileNo: AdminNumber2 }).select('fcmToken -_id');
+                var findAdminFcmToken3 = await customerSchema.find({ mobileNo: AdminNumber3 }).select('fcmToken -_id');
+                var findAdminFcmToken4 = await customerSchema.find({ mobileNo: AdminNumber4 }).select('fcmToken -_id');
+                var findAdminFcmToken5 = await customerSchema.find({ mobileNo: AdminNumber5 }).select('fcmToken -_id');
+                
+                findAdminFcmToken == undefined ? " " : findAdminFcmToken[0].fcmToken;
+                findAdminFcmToken2 == undefined ? " " : findAdminFcmToken2[0].fcmToken;
+                findAdminFcmToken3 == undefined ? " " : findAdminFcmToken3[0].fcmToken;
+                findAdminFcmToken4 == undefined ? " " : findAdminFcmToken4[0].fcmToken;
+                findAdminFcmToken5 == undefined ? " " : findAdminFcmToken5[0].fcmToken;
+                
+                console.log(findAdminFcmToken);
+                console.log(findAdminFcmToken2);
+                console.log(findAdminFcmToken3);
+                console.log(findAdminFcmToken4);
+                console.log(findAdminFcmToken5);
+    
+                var AdminFcmToken = [findAdminFcmToken,findAdminFcmToken2,findAdminFcmToken3,findAdminFcmToken4,findAdminFcmToken5];
+                console.log("-------------------------ADMINS TOKENS-----------------------------");
+                console.log(AdminFcmToken);
+    
+                let newOrderData = newVendorMultiOrder.orderNo;
+                let newOrderPickUp = newVendorMultiOrder.pickupPoint.address;
+                // let newOrderDelivery = newVendorMultiOrder.deliveryPoint.address;
+                let newOrderCustomerId = newVendorMultiOrder.customerId;
+                console.log(newOrderCustomerId);
+    
+                // console.log(MultiOrders.length);
+                // let newOrderDelivery = [];
+                // for(let ik=0;ik<MultiOrders.length;ik++){
+                //     newOrderDelivery.push(MultiOrders[ik].deliveryPoint.address);
+                // }
+    
+                let newOrderNotification = `New Order Received 
+                OrderID: ${newOrderData}
+                Vendor: ${newOrderCustomer[0].name}
+                Mobile: ${newOrderCustomer[0].mobileNo}  
+                PickUp: ${newOrderPickUp}`;
+                console.log(newOrderNotification);
+    
+                var AdminPhoneNumbers = [AdminNumber1,AdminNumber2,AdminNumber3,AdminNumber4,AdminNumber5];
+                for(let i=0;i<AdminFcmToken.length;i++){
+                    console.log(`--------------------------------------- ${i}`);
+                    console.log(AdminFcmToken[i][0].fcmToken)
+                    var dataSendToAdmin = {
+                        "to":AdminFcmToken[i][0].fcmToken,
+                        "priority":"high",
+                        "content_available":true,
+                        "data": {
+                            "sound": "surprise.mp3",
+                            "click_action": "FLUTTER_NOTIFICATION_CLICK"
+                        },
+                        "notification":{
+                                    "body": newOrderNotification,
+                                    "title":"New Order Received",
+                                    "badge":1
+                                }
+                    };
+            
+                    var options2 = {
+                        'method': 'POST',
+                        'url': 'https://fcm.googleapis.com/fcm/send',
+                        'headers': {
+                            'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataSendToAdmin)
+                    };
+                    request(options2, function (error, response , body) {
+                        console.log("--------------------Sender--------------------");
+                        let myJsonBody = JSON.stringify(body);
+                        console.log(myJsonBody);
+                        //myJsonBody[51] USED TO ACCESS RESPONSE DATA SUCCESS FIELD
+                        console.log(myJsonBody[51]);
+                        if(myJsonBody[51]==0){
+                            console.log("Send Text notification of new order..........!!!");
+                            sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                        }
+                        if (error) {
+                            console.log(error.message);
+                        } else {
+                            console.log("Sending Notification Testing....!!!");
+                            console.log(response.body);
+                            if(response.body.success=="1"){
+                                console.log("Send Text notification of new order..........!!!");
+                                sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                            }
+                        }
+                    });
+                }
+        
+            console.log("After sending notification");
+            
+            // FCM notification End
+        
+                    // New Code 03-09-2020
+                    var payload = {
+                        "title": "Order Alert",
+                        "body": "New Order Alert Found For You.",
+                        "data": {
+                            "sound": "surprise.mp3",
+                            "orderid": courierfound[0].orderId.toString(),
+                            "distance": courierfound[0].distance.toString(),
+                            "click_action": "FLUTTER_NOTIFICATION_CLICK"
+                        },
+                        "to": courierfound[0].fcmToken
+                    };
+                    var options = {
+                        'method': 'POST',
+                        'url': 'https://fcm.googleapis.com/fcm/send',
+                        'headers': {
+                            'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    };
+                    request(options, function (error, response) {
+                        if (error) {
+                            console.log(error.message);
+                        } else {
+                            console.log("Sending Notification");
+                            console.log(response.body);
+                        }
+                    });
+            }
             res.status(200).json({ IsSuccess: true , Count: vendorOrders.length ,Data: vendorOrders , Message: "Order Placed" });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [] , Message: "Order Not Placed" });

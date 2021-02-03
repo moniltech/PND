@@ -1611,11 +1611,11 @@ async function sendMessages(mobileNo, message) {
     try {
         await axios.get(msgportal)
             .then(resp=>{
-                console.log("===========================================================================");
+                // console.log("===========================================================================");
                 console.log(resp.data);
             })  
             .catch(error=>{
-                console.log("=========================  ERROR  ==================================================");
+                // console.log("=========================  ERROR  ==================================================");
             
                 console.log(error.response.data);
             });;
