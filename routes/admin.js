@@ -767,31 +767,51 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
 // }); 
 
 //Test
-router.post("/testCom",async function(req,res,next){
-    const { resPerPage , page } = req.body;
-    let resPerPageIs = Number(resPerPage);
-    let pageIs = Number(page);
+router.post("/completed_ordersV2",async function(req,res,next){
+    
     try {
-        let completeOrders = await orderSchema.aggregate([
-            { $match: { status: "Order Delivered" , isActive: false } },    // This is your query
-            { $sort: { dateTime: -1 } },
-            { $skip: (resPerPageIs * pageIs) - resPerPageIs },   // Always apply 'skip' before 'limit'
-            { $limit: resPerPageIs },
-        ])
-        // let completeOrders = await orderSchema
-        //     .find({ status: "Order Delivered", isActive: false })
-        //     .populate(
-        //         "courierId",
-        //         "firstName lastName fcmToken mobileNo accStatus transport isVerified"
-        //     )
-        //     .populate("customerId")
-        //     .skip((resPerPageIs * pageIs) - resPerPageIs)
-        //     .limit(resPerPageIs)
-        //     .sort({ dateTime: -1 });
-        if(completeOrders.length > 0){
-            res.status(200).json({ IsSuccess: true , Data: completeOrders, Message: "Data Found" });
+        // let completeOrders = await orderSchema.aggregate([
+        //     { $match: { status: "Order Delivered" , isActive: false } },    // This is your query
+        //     { $sort: { dateTime: -1 } },
+        //     { $skip: (resPerPageIs * pageIs) - resPerPageIs },   // Always apply 'skip' before 'limit'
+        //     { $limit: resPerPageIs },
+        // ])
+        const { resPerPage , page } = req.body;
+        let resPerPageIs = Number(resPerPage);
+        let pageIs = Number(page);
+
+        let newdataset = [];
+        let completeOrders = await orderSchema
+            .find({ status: "Order Delivered", isActive: false })
+            .populate(
+                "courierId",
+                "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+            )
+            .populate("customerId")
+            .skip((resPerPageIs * pageIs) - resPerPageIs)
+            .limit(resPerPageIs)
+            .sort({ dateTime: -1 });
+
+        let orderscomplete = [];
+        for (let i = 0; i < completeOrders.length; i++) {
+            let datadate = await ExtatimeSchema.find({
+                orderId: completeOrders[i]._id,
+            });
+            orderscomplete.push({
+                starttime: datadate[0].dateTime,
+                endTime: datadate[0].deliverytime != null ? datadate[0].deliverytime : null,
+                completeOrders: completeOrders[i],
+            });
+        }
+
+        // newdataset.push({
+        //     completeOrders: orderscomplete,
+        // });
+
+        if(orderscomplete.length > 0){
+            res.status(200).json({ IsSuccess: true , Count: orderscomplete.length , Data: orderscomplete, Message: "Data Found" });
         }else{
-            res.status(200).json({ IsSuccess: true , Data: completeOrders, Message: "Data Not Found" });
+            res.status(200).json({ IsSuccess: true , Data: [], Message: "Data Not Found" });
         }
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
