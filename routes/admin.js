@@ -804,12 +804,27 @@ router.post("/completed_ordersV2",async function(req,res,next){
             });
         }
 
+        let totalRecords = await orderSchema.aggregate([
+            {
+                $match: { status: "Order Delivered", isActive: false }
+            },
+            {
+                $count: "TotalCompletedOrder"
+            }
+        ]);
+        // console.log(totalRecords[0].TotalCompletedOrder);
         // newdataset.push({
         //     completeOrders: orderscomplete,
         // });
 
         if(orderscomplete.length > 0){
-            res.status(200).json({ IsSuccess: true , Count: orderscomplete.length , Data: orderscomplete, Message: "Data Found" });
+            res.status(200).json({ 
+                                IsSuccess: true , 
+                                TotalCompletedOrder: totalRecords[0].TotalCompletedOrder,
+                                Count: orderscomplete.length , 
+                                Data: orderscomplete, 
+                                Message: "Data Found" 
+                            });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [], Message: "Data Not Found" });
         }
@@ -870,6 +885,15 @@ router.post("/completed_orders", async function (req, res, next) {
         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
     }
 });
+
+//Search in Completed Orders
+// router.post("/searchInCompletedOrders", async function(req,res,next){
+//     try {
+//         const { keyword } = req.body;
+//     } catch (error) {
+//         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
+//     }
+// });
 
 //Recent 100 Completed Orders---21/12/2020---Hansil
 
