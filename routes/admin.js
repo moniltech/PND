@@ -14,6 +14,7 @@ const geolib = require("geolib");
 const isEmpty = require('lodash.isempty');
 const moment = require('moment-timezone');
 const mongoose = require('mongoose');
+mongoose.set('useCreateIndex', true);
 
 //Distance Calculations between two lat & long
 function calculatelocation(lat1, long1, lat2, long2) {
@@ -207,16 +208,17 @@ router.post("/dashcounters", async function (req, res, next) {
         let couriers = await courierSchema.countDocuments();
         let totalOrders = await orderSchema.countDocuments();
         let customers = await customerSchema.countDocuments();
-        // let completedOrders = await orderSchema.find({ status: "Order Delivered", isActive: false }).countDocuments();
+        let completedOrders = await orderSchema.find({ status: "Order Delivered", isActive: false }).countDocuments();
         let disapporved = await courierSchema
             .find({ "accStatus.flag": false })
             .countDocuments();
+
         let pendingOrders = await orderSchema
             .find({
                 status: "Admin",
             })
             .countDocuments();
-
+        // console.log(pendingOrders);
         let datalist = [];
         datalist.push({
             admins: admins,
@@ -233,6 +235,47 @@ router.post("/dashcounters", async function (req, res, next) {
             .json({ Message: "Counters Found!", Data: datalist, IsSuccess: true });
     } catch (err) {
         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
+    }
+});
+
+//New DashCounter API-----------------05/02/2021-----------MONIL
+router.post("/dashcounters_v1", async function(req,res,next){
+    try {
+        let admins = await adminSchema.countDocuments();
+        let couriers = await courierSchema.countDocuments();
+        let totalOrders = await orderSchema.countDocuments();
+        let customers = await customerSchema.countDocuments();
+
+        let disapporved = await courierSchema.aggregate([
+            {
+                $match: { "accStatus.flag": false }
+            },
+            {
+                $count: "Disapporved"
+            }
+        ]);
+
+        let pendingOrders = await orderSchema.aggregate([
+            {
+                $match: { status: "Admin" }
+            },
+            {
+                $count:  "Pending" 
+            }
+        ]);
+
+        res.status(200).json({
+            IsSuccess: true,
+            admins: admins,
+            couriers: couriers,
+            totalOrders: totalOrders,
+            customers: customers,
+            pendingOrders: pendingOrders[0].Pending,
+            disapporved: disapporved[0].Disapporved,
+        });
+
+    } catch (error) {
+        res.status(500).json({ Message: error.message, Data: 0, IsSuccess: false });
     }
 });
 
@@ -887,13 +930,22 @@ router.post("/completed_orders", async function (req, res, next) {
 });
 
 //Search in Completed Orders
-// router.post("/searchInCompletedOrders", async function(req,res,next){
-//     try {
-//         const { keyword } = req.body;
-//     } catch (error) {
-//         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
-//     }
-// });
+router.post("/searchInCompletedOrders", async function(req,res,next){
+    try {
+        const { keyword } = req.body;
+        let searchData = await orderSchema.aggregate([ 
+                                {
+                                    $match: {
+                                        $text: { $search: keyword }
+                                    }
+                                },
+                            ]);
+        // let searchData = await orderSchema.createIndex({ orderNo: 'text' });
+        // console.log(searchData);
+    } catch (error) {
+        res.status(500).json({ Message: error.message, Data: 0, IsSuccess: false });
+    }
+});
 
 //Recent 100 Completed Orders---21/12/2020---Hansil
 
@@ -1156,8 +1208,52 @@ router.post("/getLiveLocation", async function (req, res, next) {
     } catch(err) {
         res.status(500).json({ IsSuccess: false , Message: err.message });
     }
-    // const used = process.memoryUsage().heapUsed / 1024 / 1024;
-    // console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
+    const used = process.memoryUsage().heapUsed / 1024 / 1024;
+    console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
+});
+
+//get live location of courier boys whose duty is on: used in dashboard adminpanel
+router.post("/getLiveLocation_V1", async function (req, res, next) {
+    try {
+        let list_courier = [];
+    
+        let listIds = await courierSchema.aggregate([
+            {
+                $match: { isActive: true, "accStatus.flag": true, isVerified: true }
+            },
+            {
+                $project: { firstName: 1 , lastName: 1 }
+            }
+        ]);
+        let counter = 0;
+        for (let i = 0; i < listIds.length; i++) {
+            let id = String(listIds[i]._id)
+            let location = await currentLocation(id);
+            // console.log(location);
+            if (location != null && location.duty == "ON") {
+                counter++;
+                let name = listIds[i].firstName + " " + listIds[i].lastName;
+                let lat = Number(location.latitude);
+                let long = Number(location.longitude);
+                var data = [name, lat, long, counter];
+                list_courier.push(data);
+                // console.log(data);
+            }
+        }
+        // console.log(listIds);
+
+        // //-----15-12-2020----------MONIL
+        if(list_courier.length > 0){
+            res.status(200).json({ IsSuccess: true , Data: list_courier , Message: "Live Location Found"});
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Live Location Not Found"});
+        }
+        
+    } catch(err) {
+        res.status(500).json({ IsSuccess: false , Message: err.message });
+    }
+    const used = process.memoryUsage().heapUsed / 1024 / 1024;
+    console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
 });
 
 //get todays extra kilometers done by courier boys during orders
