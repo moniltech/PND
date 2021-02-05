@@ -22,31 +22,31 @@ const orderSchema = mongoose.Schema({
     pickupPoint: {
         name: {
             type: String,
-            required: true,
+            // required: true,
         },
         mobileNo: {
             type: String,
-            required: true,
+            // required: true,
         },
         address: {
             type: String,
-            required: true,
+            // required: true,
         },
         lat: {
             type: String,
-            required: true,
+            // required: true,
         },
         long: {
             type: String,
-            required: true,
+            // required: true,
         },
         completeAddress: {
             type: String,
-            required: true,
+            // required: true,
         },
         contents: {
             type: String,
-            required: true,
+            // required: true,
         },
         arriveType: {
             type: String,
@@ -58,31 +58,31 @@ const orderSchema = mongoose.Schema({
     deliveryPoint: {
         name: {
             type: String,
-            required: true,
+            // required: true,
         },
         mobileNo: {
             type: String,
-            required: true,
+            // required: true,
         },
         address: {
             type: String,
-            required: true,
+            // required: true,
         },
         lat: {
             type: String,
-            required: true,
+            // required: true,
         },
         long: {
             type: String,
-            required: true,
+            // required: true,
         },
         completeAddress: {
             type: String,
-            required: true,
+            // required: true,
         },
         distance: {
             type: Number,
-            required: true,
+            // required: true,
         },
         vendorBillAmount: {
             type: Number,
@@ -102,27 +102,27 @@ const orderSchema = mongoose.Schema({
     },
     collectCash: {
         type: String,
-        required: true,
+        // required: true,
     },
     promoCode: {
         type: String,
-        required: true,
+        // required: true,
     },
     amount: {
         type: Number,
-        required: true,
+        // required: true,
     },
     discount: {
         type: Number,
-        required: true,
+        // required: true,
     },
     additionalAmount: {
         type: Number,
-        required: true,
+        // required: true,
     },
     finalAmount: {
         type: Number,
-        required: true,
+        // required: true,
     },
     status: {
         type: String,
@@ -179,7 +179,8 @@ const orderSchema = mongoose.Schema({
         default: ""
     },
     extraKmByCourierBoy: {
-        type: Number
+        type: Number,
+        default: 0
     },
 });
 

@@ -25,6 +25,7 @@ let customerSchema = require("../data_models/customer.signup.model");
 let usedpromoSchema = require("../data_models/used.promocode.model");
 let locationLoggerSchema = require("../data_models/location.logger.model");
 let courierSchema = require("../data_models/courier.signup.model");
+var orderSchema = require("../data_models/order.model");
 
 async function currentLocation(courierId) {
     console.log(courierId);
@@ -357,7 +358,7 @@ router.post("/vendorOrderCalc",async function(req,res,next){
     } = req.body;
     try {
         let vendorData = await vendorModelSchema.find({ _id: vendorId });
-        let orderIs = await demoOrderSchema.find({ orderNo: orderNo});
+        let orderIs = await orderSchema.find({ orderNo: orderNo});
 
         let deliveryPoints = [];
         for(let ij=0;ij<orderIs.length;ij++){
@@ -486,7 +487,7 @@ router.post("/vendorOrderCalc",async function(req,res,next){
             let vendorOrderMTNum = orderIs[j].multiOrderNo;
             console.log(vendorOrderMTNum);
             console.log("=======================================================================================");
-            let updateInOrder = await demoOrderSchema.findByIdAndUpdate(orderIs[j]._id,updateDeliveryDetails);
+            let updateInOrder = await orderSchema.findByIdAndUpdate(orderIs[j]._id,updateDeliveryDetails);
         }
         console.log(DataPass);
         let pndTotalAmountCollect = 0;
@@ -509,7 +510,7 @@ router.post("/vendorOrderCalc",async function(req,res,next){
         //     }
         //     let vendorOrderMTNum = orderIs[jk].multiOrderNo;
         //     // console.log(vendorOrderMTNum);
-        //     let updateInOrder = await demoOrderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
+        //     let updateInOrder = await orderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
         // }
        
         res.status(200).json({ 
@@ -557,7 +558,7 @@ router.post("/vendorOrderCalc",async function(req,res,next){
                 let vendorOrderMTNum = orderIs[h].multiOrderNo;
                 console.log(vendorOrderMTNum);
                 console.log("====================================nahhhhhhhhhhhhhhh==================================");
-                let updateInOrder = await demoOrderSchema.findByIdAndUpdate(orderIs[h]._id,updateDeliveryDetails);
+                let updateInOrder = await orderSchema.findByIdAndUpdate(orderIs[h]._id,updateDeliveryDetails);
             }
             console.log(DataPass);
             let pndTotalAmountCollect = 0;
@@ -581,7 +582,7 @@ router.post("/vendorOrderCalc",async function(req,res,next){
             //     let vendorOrderMTNum = orderIs[jk].multiOrderNo;
             //     // console.log(vendorOrderMTNum);
             //     console.log("==============================nahhhhhhhhhhhhhhhhhhhhh======================================");
-            //     let updateInOrder = await demoOrderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
+            //     let updateInOrder = await orderSchema.findOneAndUpdate({ multiOrderNo: vendorOrderMTNum},updateIs);
             // }
             res.status(200).json({ 
                 IsSuccess: true,
@@ -629,7 +630,7 @@ router.post("/vendorOrder", orderimg.single("orderimg"), async function(req,res,
         let pickData = await vendorModelSchema.find({ _id: vendorId });
         // if(pickData[0].isApprove == true)
         for(let i=0;i<deliveryAddresses.length;i++){
-            var newVendorMultiOrder = new demoOrderSchema({
+            var newVendorMultiOrder = new orderSchema({
                 _id: new config.mongoose.Types.ObjectId(),
                 orderBy: "vendor",
                 orderNo: num,
@@ -894,7 +895,7 @@ router.post("/vendorOrdersList" , async function(req,res,next){
             console.log(isoDate1);
             console.log(isoDate2);
 
-            orderData = await demoOrderSchema.find({
+            orderData = await orderSchema.find({
                 vendorId: mongoose.Types.ObjectId(vendorId),
                 dateTime: {
                     $gte: isoDate1,
@@ -905,7 +906,7 @@ router.post("/vendorOrdersList" , async function(req,res,next){
             let isoDate1 = convertStringDateToISO(ofDate);
             let isoDate2 = convertStringDateToISOPlusOne(ofDate);
 
-            orderData = await demoOrderSchema.find({
+            orderData = await orderSchema.find({
                 vendorId: mongoose.Types.ObjectId(vendorId),
                 dateTime: {
                     $gte: isoDate1,
@@ -913,7 +914,7 @@ router.post("/vendorOrdersList" , async function(req,res,next){
                 },
             })
         } else{
-            orderData = await demoOrderSchema.aggregate([
+            orderData = await orderSchema.aggregate([
                 { 
                     $match : {
                             vendorId: mongoose.Types.ObjectId(vendorId) 
@@ -984,7 +985,7 @@ router.post("/vendorOrdersList" , async function(req,res,next){
 router.post("/getDeliveryOrderDetails", async function(req,res,next){
     const { orderMTNo } = req.body;
     try {
-        let orderIs = await demoOrderSchema.find({ multiOrderNo: orderMTNo });
+        let orderIs = await orderSchema.find({ multiOrderNo: orderMTNo });
         if(orderIs.length == 1){
             res.status(200).json({ IsSuccess: true, Data: orderIs , Message: "Order Data Found" });
         }else{
@@ -1034,7 +1035,7 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
     const { ofDate , fromDate } = req.body;
     try {
         
-        // let vendorOrderIs = await demoOrderSchema.find({ 
+        // let vendorOrderIs = await orderSchema.find({ 
         //                                             orderBy : "vendor",
         //                                             dateTime: {
         //                                                 $gte: isoDate1,
@@ -1055,7 +1056,7 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
             if(ofDate && fromDate){
                 let isoDate1 = convertStringDateToISO(ofDate);
                 let isoDate2 = convertStringDateToISO(fromDate);
-                orderIs = await demoOrderSchema.find({ 
+                orderIs = await orderSchema.find({ 
                     vendorId: vendorsData[j]._id,
                     dateTime: {
                         $gte: isoDate1,
@@ -1069,7 +1070,7 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
             }else if(ofDate && fromDate == undefined){
                 let isoDate1 = convertStringDateToISO(ofDate);
                 let isoDate2 = convertStringDateToISOPlusOne(ofDate);
-                orderIs = await demoOrderSchema.find({ 
+                orderIs = await orderSchema.find({ 
                     vendorId: vendorsData[j]._id,
                     dateTime: {
                         $gte: isoDate1,
@@ -1082,7 +1083,7 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
                });
             } else{
                 console.log("-------------------Here------------------------------------------")
-                orderIs = await demoOrderSchema.find({ 
+                orderIs = await orderSchema.find({ 
                     vendorId: vendorsData[j]._id, 
                 })
                .populate({
@@ -1141,7 +1142,7 @@ router.post("/getAllVendorOrderListing",async function(req,res,next){
 //Delete Records from demoorder Table
 router.post("/delVendorOrder", async function(req,res,next){
     try {
-        let delRecord = await demoOrderSchema.deleteMany();
+        let delRecord = await orderSchema.deleteMany();
         res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Vendor Order Deleted" });
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message })
@@ -1151,7 +1152,7 @@ router.post("/delVendorOrder", async function(req,res,next){
 router.post("/cancelVendorOrder", async function(req,res,next){
     const { orderNo , vendorId } = req.body;
     try {
-        let orderIs = await demoOrderSchema.find({ $and: [ { orderNo: orderNo }, { vendorId: vendorId } , { orderBy: "vendor" } ] });
+        let orderIs = await orderSchema.find({ $and: [ { orderNo: orderNo }, { vendorId: vendorId } , { orderBy: "vendor" } ] });
         console.log(orderIs.length);
         for(let jk=0;jk<orderIs.length;jk++){
             console.log(orderIs[jk]._id);
@@ -1159,7 +1160,7 @@ router.post("/cancelVendorOrder", async function(req,res,next){
                         status : "Order Cancelled",
                         isActive : false,
                     }
-            let cancelOrderIs = await demoOrderSchema.findByIdAndUpdate(orderIs[jk]._id,updateIs);
+            let cancelOrderIs = await orderSchema.findByIdAndUpdate(orderIs[jk]._id,updateIs);
         }
         res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Order Cancelled" })
     } catch (error) {
