@@ -135,6 +135,9 @@ const expenseSchema = require('../data_models/expenseCategory');
 const expenseEntrySchema = require('../data_models/expenseEntry');
 const courierLeaveSchema = require('../data_models/courierLeaveModel');
 const courierSalarySchema = require('../data_models/employeeSalaryModel');
+const apkDetails = require('../data_models/apkDetails');
+const { update } = require("../data_models/vendor.model");
+const { UnavailableForLegalReasons } = require("http-errors");
 
 async function currentLocation(id) {
     var CourierRef = config.docref.child(id);
@@ -2980,6 +2983,62 @@ router.post("/addEmpSalary", async function(req,res,next){
             res.status(200).json({ IsSuccess: true , Data: [addSalaryRecord] , Message: "Salary Record Added" });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [] , Message: "Salary Record Not Added" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+//Add Android Version---------------------MONIL-----------06/02/2021
+router.post("/addAPKVersion", async function(req,res,next){
+    try {
+        const { androidVersion , iosVersion , tinyURL } = req.body;
+        let addRecord = await new apkDetails({
+            androidVersion: androidVersion,
+            iosVersion: iosVersion,
+            tinyURL: tinyURL
+        });
+        if(addRecord != null){
+            addRecord.save();
+            res.status(200).json({ IsSuccess: true , Data: [addRecord] , Message: "Record addded" });
+        } else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Record Not addded" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+//Update APK Details------------------------------MONIL----------------06/02/2021
+router.post("/updateAPKVersion", async function(req,res,next){
+    try {
+        const { androidVersion , iosVersion , tinyURL } = req.body;
+
+        let Record = await apkDetails.find();
+        if(record.length == 1){
+            let updateIs = {
+                androidVersion: androidVersion != undefined ? androidVersion : record[0].androidVersion,
+                iosVersion: iosVersion != undefined ? iosVersion : record[0].iosVersion,
+                tinyURL: tinyURL != undefined ? tinyURL : record[0].tinyURL,
+            }
+            let updateRecord = await apkDetails.findByIdAndUpdate(record[0]._id,updateIs);
+            res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Apk version updated" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Apk version updated" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+//Get APK Details---------------------MONIL--------------------06/02/2021
+router.post("/getAPKVersions", async function(req,res,next){
+    try {
+        let record = await apkDetails.find();
+        if(record.length == 1){
+            res.status(200).json({ IsSuccess: true , Data: record , Message: "APK Versions Found" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "APK Versions Not Found" });
         }
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
