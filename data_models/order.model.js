@@ -5,6 +5,7 @@ const orderSchema = mongoose.Schema({
     orderNo: { type: String, required: true },
     multiOrderNo: { type: String },
     customerId: { type: mongoose.Types.ObjectId, ref: "Customers" },
+    vendorId: { type: mongoose.Types.ObjectId, ref: "Vendor" },
     deliveryType: {
         type: String,
         required: true,
