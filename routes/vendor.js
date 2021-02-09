@@ -598,6 +598,7 @@ router.post("/vendorOrderCalc",async function(req,res,next){
     }
 });
 
+//Vendor order api for android apk
 router.post("/vendorOrder", orderimg.single("orderimg"), async function(req,res,next){
     var {
         vendorId,
@@ -628,6 +629,283 @@ router.post("/vendorOrder", orderimg.single("orderimg"), async function(req,res,
     let vendorOrders = [];
     try {
         let pickData = await vendorModelSchema.find({ _id: vendorId });
+        // if(pickData[0].isApprove == true)
+        for(let i=0;i<deliveryAddresses.length;i++){
+            var newVendorMultiOrder = new orderSchema({
+                _id: new config.mongoose.Types.ObjectId(),
+                orderBy: "vendor",
+                orderNo: num,
+                multiOrderNo: getVendorMultiOrderNumber(),
+                vendorId: vendorId,
+                deliveryType: deliveryType,
+                schedualDate: schedualDate,
+                schedualTime: schedualTime,
+                weightLimit: weightLimit,
+                // orderImg: file == undefined ? "" : file.path,
+                dateTime: dateTime,
+                pickupPoint: {
+                    name: pickData[0].name,
+                    mobileNo: pickData[0].mobileNo,
+                    address: pickData[0].address,
+                    lat: pickData[0].gpsLocation.lat,
+                    long: pickData[0].gpsLocation.long,
+                    completeAddress: pkCompleteAddress,
+                    contents: pkContent,
+                    arriveType: pkArriveType,
+                    arriveTime: pkArriveTime,
+                },
+                deliveryPoint:{
+                    name: deliveryAddresses[i].dpName,
+                    mobileNo: deliveryAddresses[i].dpMobileNo,
+                    address: deliveryAddresses[i].dpAddress,
+                    lat: deliveryAddresses[i].dpLat,
+                    long: deliveryAddresses[i].dpLong,
+                    completeAddress: deliveryAddresses[i].dpCompleteAddress,
+                    distance: deliveryAddresses[i].dpDistance,
+                    vendorBillAmount : deliveryAddresses[i].vendorBillAmount,
+                    customerCourierCharge : deliveryAddresses[i].customerCourierCharge,
+                    vendorBillFinalAmount : deliveryAddresses[i].vendorBillFinalAmount,
+                    courierChargeCollectFromCustomer: deliveryAddresses[i].courierChargeCollectFromCustomer,
+                },
+                // collectCash: collectCash,
+                promoCode: promoCode,
+                // amount: "",
+                // discount: "",
+                // additionalAmount: "",
+                // finalAmount: "",
+                status: "Order Processing",
+                note: "Your order is processing!",
+            });
+            var placeMultiOrder = await newVendorMultiOrder.save();
+            // var placeMultiOrder = newVendorMultiOrder;
+            vendorOrders.push(placeMultiOrder);   
+        }
+        let newOrderCustomer = await vendorModelSchema.find({ _id: vendorId });
+
+        // console.log(newOrderCustomer[0].gpsLocation.lat);
+        // console.log(newOrderCustomer[0].gpsLocation.long);
+        let pkLat = parseFloat(newOrderCustomer[0].gpsLocation.lat);
+        let pkLong = parseFloat(newOrderCustomer[0].gpsLocation.long);
+
+        console.log(pkLat);
+        console.log(pkLong);
+
+        if(!pkLat && !pkLong){
+            console.log("============================Manual Assign========================================");
+            if(vendorOrders.length > 0){
+                return res.status(200).json({ IsSuccess: true , Data: vendorOrders , Message: "Vendor Orders Found" });
+            }else{
+                return res.status(200).json({ IsSuccess: true , Data: [] , Message: "Vendor Orders Not Placed" });
+            }
+        }
+
+        var avlcourier = await PNDfinder(
+            pkLat,
+            pkLong,
+            placeMultiOrder.id,
+            placeMultiOrder.deliveryType
+        );
+        if (promoCode != "0") {
+            let usedpromo = new usedpromoSchema({
+                _id: new config.mongoose.Types.ObjectId(),
+                customer: customerId,
+                code: promoCode,
+            });
+            usedpromo.save();
+        }
+        
+        if(vendorOrders.length > 0){
+            if (placeMultiOrder != null && avlcourier.length != 0) {
+                console.log("Total Found:" + avlcourier.length);
+                let courierfound = arraySort(avlcourier, "distance");
+                var newrequest = new requestSchema({
+                    _id: new config.mongoose.Types.ObjectId(),
+                    courierId: courierfound[0].courierId,
+                    orderId: courierfound[0].orderId,
+                    distance: courierfound[0].distance,
+                    status: courierfound[0].status,
+                    reason: courierfound[0].reason,
+                    fcmToken: courierfound[0].fcmToken,
+                });
+                await newrequest.save();
+                var AdminMobile = await settingsSchema.find({}).select('AdminMObile1 AdminMObile2 AdminMObile3 AdminMObile4 AdminMObile5 -_id');
+                console.log("Admin numbers-------------------------------------------------");
+                console.log(AdminMobile);
+                var AdminNumber1 = AdminMobile[0].AdminMObile1; 
+                var AdminNumber2 = AdminMobile[0].AdminMObile2; 
+                var AdminNumber3 = AdminMobile[0].AdminMObile3; 
+                var AdminNumber4 = AdminMobile[0].AdminMObile4; 
+                var AdminNumber5 = AdminMobile[0].AdminMObile5;
+        
+                // console.log(AdminNumber1);
+    
+                var findAdminFcmToken = await customerSchema.find({ mobileNo: AdminNumber1 }).select('fcmToken -_id');
+                var findAdminFcmToken2 = await customerSchema.find({ mobileNo: AdminNumber2 }).select('fcmToken -_id');
+                var findAdminFcmToken3 = await customerSchema.find({ mobileNo: AdminNumber3 }).select('fcmToken -_id');
+                var findAdminFcmToken4 = await customerSchema.find({ mobileNo: AdminNumber4 }).select('fcmToken -_id');
+                var findAdminFcmToken5 = await customerSchema.find({ mobileNo: AdminNumber5 }).select('fcmToken -_id');
+                
+                findAdminFcmToken == undefined ? " " : findAdminFcmToken[0].fcmToken;
+                findAdminFcmToken2 == undefined ? " " : findAdminFcmToken2[0].fcmToken;
+                findAdminFcmToken3 == undefined ? " " : findAdminFcmToken3[0].fcmToken;
+                findAdminFcmToken4 == undefined ? " " : findAdminFcmToken4[0].fcmToken;
+                findAdminFcmToken5 == undefined ? " " : findAdminFcmToken5[0].fcmToken;
+                
+                console.log(findAdminFcmToken);
+                console.log(findAdminFcmToken2);
+                console.log(findAdminFcmToken3);
+                console.log(findAdminFcmToken4);
+                console.log(findAdminFcmToken5);
+    
+                var AdminFcmToken = [findAdminFcmToken,findAdminFcmToken2,findAdminFcmToken3,findAdminFcmToken4,findAdminFcmToken5];
+                console.log("-------------------------ADMINS TOKENS-----------------------------");
+                console.log(AdminFcmToken);
+    
+                let newOrderData = newVendorMultiOrder.orderNo;
+                let newOrderPickUp = newVendorMultiOrder.pickupPoint.address;
+                // let newOrderDelivery = newVendorMultiOrder.deliveryPoint.address;
+                let newOrderCustomerId = newVendorMultiOrder.customerId;
+                console.log(newOrderCustomerId);
+    
+                // console.log(MultiOrders.length);
+                // let newOrderDelivery = [];
+                // for(let ik=0;ik<MultiOrders.length;ik++){
+                //     newOrderDelivery.push(MultiOrders[ik].deliveryPoint.address);
+                // }
+    
+                let newOrderNotification = `New Order Received 
+                OrderID: ${newOrderData}
+                Vendor: ${newOrderCustomer[0].name}
+                Mobile: ${newOrderCustomer[0].mobileNo}  
+                PickUp: ${newOrderPickUp}`;
+                console.log(newOrderNotification);
+    
+                var AdminPhoneNumbers = [AdminNumber1,AdminNumber2,AdminNumber3,AdminNumber4,AdminNumber5];
+                for(let i=0;i<AdminFcmToken.length;i++){
+                    console.log(`--------------------------------------- ${i}`);
+                    console.log(AdminFcmToken[i][0].fcmToken)
+                    var dataSendToAdmin = {
+                        "to":AdminFcmToken[i][0].fcmToken,
+                        "priority":"high",
+                        "content_available":true,
+                        "data": {
+                            "sound": "surprise.mp3",
+                            "click_action": "FLUTTER_NOTIFICATION_CLICK"
+                        },
+                        "notification":{
+                                    "body": newOrderNotification,
+                                    "title":"New Order Received",
+                                    "badge":1
+                                }
+                    };
+            
+                    var options2 = {
+                        'method': 'POST',
+                        'url': 'https://fcm.googleapis.com/fcm/send',
+                        'headers': {
+                            'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataSendToAdmin)
+                    };
+                    request(options2, function (error, response , body) {
+                        console.log("--------------------Sender--------------------");
+                        let myJsonBody = JSON.stringify(body);
+                        console.log(myJsonBody);
+                        //myJsonBody[51] USED TO ACCESS RESPONSE DATA SUCCESS FIELD
+                        console.log(myJsonBody[51]);
+                        if(myJsonBody[51]==0){
+                            console.log("Send Text notification of new order..........!!!");
+                            sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                        }
+                        if (error) {
+                            console.log(error.message);
+                        } else {
+                            console.log("Sending Notification Testing....!!!");
+                            console.log(response.body);
+                            if(response.body.success=="1"){
+                                console.log("Send Text notification of new order..........!!!");
+                                sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                            }
+                        }
+                    });
+                }
+        
+            console.log("After sending notification");
+            
+            // FCM notification End
+        
+                    // New Code 03-09-2020
+                    var payload = {
+                        "title": "Order Alert",
+                        "body": "New Order Alert Found For You.",
+                        "data": {
+                            "sound": "surprise.mp3",
+                            "orderid": courierfound[0].orderId.toString(),
+                            "distance": courierfound[0].distance.toString(),
+                            "click_action": "FLUTTER_NOTIFICATION_CLICK"
+                        },
+                        "to": courierfound[0].fcmToken
+                    };
+                    var options = {
+                        'method': 'POST',
+                        'url': 'https://fcm.googleapis.com/fcm/send',
+                        'headers': {
+                            'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    };
+                    request(options, function (error, response) {
+                        if (error) {
+                            console.log(error.message);
+                        } else {
+                            console.log("Sending Notification");
+                            console.log(response.body);
+                        }
+                    });
+            }
+            res.status(200).json({ IsSuccess: true , Count: vendorOrders.length ,Data: vendorOrders , Message: "Order Placed" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Order Not Placed" });
+        }        
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+//Vendor order api for website
+router.post("/vendorOrder_v1", orderimg.single("orderimg"), async function(req,res,next){
+    var {
+        vendorId,
+        deliveryType,
+        weightLimit,
+        // pkName,
+        // pkMobileNo,
+        // pkAddress,
+        // pkLat,
+        // pkLong,
+        pkCompleteAddress,
+        pkContent,
+        pkArriveType,
+        pkArriveTime,
+        deliveryAddresses,
+        // collectCash,
+        promoCode,
+        // amount,
+        // discount,
+        // additionalAmount,
+        // finalAmount,
+        schedualDate,
+        schedualTime,
+        dateTime,
+    } = req.body;
+    const file = req.file;
+    let num = getVendorOrderNumber();
+    let vendorOrders = [];
+    try {
+        let pickData = await vendorModelSchema.find({ _id: vendorId });
+        deliveryAddresses = JSON.parse(deliveryAddresses);
         // if(pickData[0].isApprove == true)
         for(let i=0;i<deliveryAddresses.length;i++){
             var newVendorMultiOrder = new orderSchema({
@@ -933,10 +1211,12 @@ router.post("/vendorOrdersList" , async function(req,res,next){
             let courierChargeCollectFromCustomerIs = orderData[i].deliveryPoint.courierChargeCollectFromCustomer == null ? 0 : orderData[i].deliveryPoint.courierChargeCollectFromCustomer;
             let vendorBill = orderData[i].deliveryPoint.vendorBillFinalAmount == null ? 0 : orderData[i].deliveryPoint.vendorBillFinalAmount;
             let PNDBill = orderData[i].chargeOfPND;
+            let deliveryStatus = orderData[i].status;
             let orderDataSend = {
                 DeliveryNo: deliveryNo,
                 DeliveryData: deliveryData,
                 DeliveryDate: deliveryDate,
+                DeliveryStatus: deliveryStatus,
                 VendorAmountCollect: vendorAmountCollect,
                 CourierCharge: courierCharge,
                 CourierChargeCollectFromCustomerIs: courierChargeCollectFromCustomerIs,
@@ -1168,13 +1448,21 @@ router.post("/cancelVendorOrder", async function(req,res,next){
     }
 });
 
-router.post("/vendorOrderDashboard", async function(req,res,next){
+router.post("/delorder", async function(req,res,next){
     try {
+        let del = await orderSchema.find({ vendorId: '6010e5d8a4b0b66089fa1b5c' });
         
+        for(let i=0;i<del.length;i++){
+            let id = del[i]._id;
+            console.log(id);
+            let delis = await orderSchema.findByIdAndDelete(id);
+        }
+        console.log(del.length);
+        res.send(del);
     } catch (error) {
         res.status(500).json({ IsSuccess: true , Message: error.message });
     }
-})
+});
 
 // router.post("/test",async function(req,res,next){
 //     scheduleSampleJob

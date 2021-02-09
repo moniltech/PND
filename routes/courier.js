@@ -503,12 +503,193 @@ router.post("/getEmployeeOrderDetails", async function(req,res,next){
 });
 
 //Get Employee Order Details V2 18/12/2020--------------------
+// router.post("/getEmployeeOrderDetailsV2", async function(req,res,next){
+//     const { courierId , ofDate } = req.body;
+//     console.log(req.body);
+
+//     let ofDate1 = convertStringDateToISO(ofDate);
+//     let ofDate2 = convertStringDateToISOPlusOne(ofDate);
+
+//     console.log(ofDate1);
+//     console.log(ofDate2);
+
+//     try {
+//         var record = await orderSchema.find({ 
+//                     courierId: courierId,
+//                     status: "Order Delivered", 
+//                     isActive: false,
+//                     dateTime: {
+//                         $gte : ofDate1,
+//                         $lt : ofDate2
+//                     },
+//                     // dateTime: "2020-12-09T08:34:06.969+00:00"
+//                     })
+//                     .populate(
+//                             "courierId",
+//                             "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+//                     )
+//                     .populate("customerId");
+//         var amount = 0;
+//         var thirdPartyCollection = 0;
+//         var totalPrice = 0;
+//         var totalDistance = 0;
+//         console.log(record);
+//         for(var i=0;i<record.length;i++){
+//             amount = amount + parseFloat(record[i].amount);
+//             thirdPartyCollection = thirdPartyCollection + parseFloat(record[i].amountCollection);
+//             totalPrice = totalPrice + parseFloat(record[i].finalAmount);
+//             totalDistance = totalDistance + parseFloat(record[i].deliveryPoint.distance);
+//             // console.log(totalDistance);
+//         }
+//         console.log(totalPrice);
+//         console.log(totalDistance);
+//         if(record.length > 0){
+//             res.status(200).json({
+//                                    IsSuccess: true,
+//                                    TotalPriceCollected: totalPrice,
+//                                    TotalDistanceTravell: totalDistance,
+//                                    TotalOrders: record.length, 
+//                                    Data: record, 
+//                                    Message: "Orders Found" 
+//                                 });
+//         }else{
+//             res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Orders Not Found" });
+//         }
+//     } catch (error) {
+//         res.status(500).json({ Message: error.message, Data: 0, IsSuccess: false });
+//     }
+// });
+
+// router.post("/getAllEmployeeOrderHistory", async function(req,res,next){
+//     const { ofDate } = req.body;
+//     // console.log(req.body);
+
+//     let ofDate1 = convertStringDateToISO(ofDate);
+//     let ofDate2 = convertStringDateToISOPlusOne(ofDate);
+
+//     console.log(ofDate1);
+//     console.log(ofDate2);
+//     try {
+//         var courierIds = [];
+//         var courierOrdersData = [];
+//         var courierBoysAre = await courierSchema.find();
+//         for(var i=0;i<courierBoysAre.length;i++){
+//             // console.log(courierBoysAre[i]._id);
+//             courierIds.push(courierBoysAre[i]._id);
+//         }
+//         let totalOfAmount = 0;
+//         let totalOfThirdPartyCollection = 0;
+//         let totalOfTotalPrice = 0;
+//         let totalOfTotalDistance = 0;
+//         let totalOfTotalDelivery = 0;
+//         // console.log(courierIds);
+//         for(var j=0;j<courierIds.length;j++){
+//             // console.log(courierIds[j]);
+            
+//             var record = await orderSchema.find({ 
+//                     courierId: courierIds[j],
+//                     status: "Order Delivered", 
+//                     isActive: false,
+//                     dateTime: {
+//                         $gte : ofDate1,
+//                         $lt : ofDate2
+//                     },
+//                 })
+//                 .populate(
+//                         "courierId",
+//                         "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+//                 )
+//                 .populate("customerId");
+//             if(record.length > 0){
+//                 // console.log(record[0].courierId[0].firstName);
+//                 // console.log(record.length);
+//                 // console.log(record[j].courierId);
+//                 let Amount = 0;
+//                 let ThirdPartyCollection = 0;
+//                 let TotalPrice = 0;
+//                 let TotalDistance = 0;
+            
+//                 for(let k=0;k<record.length;k++){
+//                     Amount = Amount + parseFloat(record[k].amount);
+//                     ThirdPartyCollection = ThirdPartyCollection + parseFloat(record[k].amountCollection);
+//                     TotalPrice = TotalPrice + parseFloat(record[k].finalAmount);
+//                     TotalDistance = TotalDistance + parseFloat(record[k].deliveryPoint.distance);
+//                 }
+//                 // console.log(Amount);
+//                 // console.log(ThirdPartyCollection);
+//                 // console.log(TotalPrice);
+//                 // console.log(TotalDistance);
+//                 var data = {
+//                     EmployeeName : record[0].courierId[0].firstName + " "+ record[0].courierId[0].lastName,
+//                     EmployeeId : record[0].courierId[0]._id,
+//                     EmployeeMobile : record[0].courierId[0].mobileNo,
+//                     AmoutCollect : Amount,
+//                     ThirdPartyCollection: ThirdPartyCollection,
+//                     TotalPrice: TotalPrice,
+//                     TotalDistance: TotalDistance,
+//                     TotalDelivery : record.length,
+//                 }
+//                 // console.log(data);
+//                 courierOrdersData.push(data); 
+//             }
+//             // console.log("Index :" + j);
+//             // console.log(courierOrdersData);
+
+//         }
+//         let maxBusinessMakeBy = 0
+//         // let maxBusinessMakeBy = Math.max.apply(Math, courierOrdersData.map(function(o) { return o; }));
+//         if(courierOrdersData.length > 0){
+//             maxBusinessMakeBy = courierOrdersData.reduce(function(prev, current) {
+//                 return (prev.TotalPrice > current.TotalPrice) ? prev : current
+//             }) //returns object
+//         }
+//         // console.log("maxBusinessMakeBy");
+//         // console.log(maxBusinessMakeBy);
+//         // console.log(courierOrdersData);
+//         for(datas in courierOrdersData){
+//             totalOfAmount = totalOfAmount + courierOrdersData[datas].AmoutCollect;
+//             totalOfThirdPartyCollection = totalOfThirdPartyCollection + courierOrdersData[datas].ThirdPartyCollection;
+//             totalOfTotalPrice = totalOfTotalPrice + courierOrdersData[datas].TotalPrice;
+//             totalOfTotalDistance = totalOfTotalDistance + courierOrdersData[datas].TotalDistance;
+//             totalOfTotalDelivery = totalOfTotalDelivery + courierOrdersData[datas].TotalDelivery;
+//         }
+//         console.log("Total Amount :"+totalOfAmount);
+//         console.log("Total ThirdParty :"+totalOfThirdPartyCollection);
+//         console.log("Total Price :"+totalOfTotalPrice);
+//         console.log("Total Distance :"+totalOfTotalDistance);
+//         console.log("Total Delivery :"+totalOfTotalDelivery);
+//         if(courierOrdersData.length > 0){
+//             res.status(200).json({ 
+//                 IsSuccess: true,
+//                 TotalAmount : totalOfAmount,
+//                 TotalThirdParty : totalOfThirdPartyCollection,
+//                 TotalPrice : totalOfTotalPrice,
+//                 TotalDistance : totalOfTotalDistance,
+//                 TotalDelivery : totalOfTotalDelivery, 
+//                 Data: courierOrdersData,
+//                 MaxPriceCollectedBy : maxBusinessMakeBy, 
+//                 Message: "Data Found" });
+//         }else{
+//             res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Data Not Found" });
+//         }
+//     } catch (error) {
+//         res.status(500).json({ Message: error.message, Data: 0, IsSuccess: false });
+//     }
+// });
+
+//Hansil Changes--------------------------------HANSIL-------------08/02/2021
 router.post("/getEmployeeOrderDetailsV2", async function(req,res,next){
-    const { courierId , ofDate } = req.body;
-    console.log(req.body);
+    const { courierId , ofDate, fromDate } = req.body;
+    // console.log(req.body);
+    let ofDate2;
 
     let ofDate1 = convertStringDateToISO(ofDate);
-    let ofDate2 = convertStringDateToISOPlusOne(ofDate);
+    if(fromDate == ''){
+        ofDate2 = convertStringDateToISOPlusOne(ofDate);
+    }
+    else{
+        ofDate2 = convertStringDateToISO(fromDate);
+    }
 
     console.log(ofDate1);
     console.log(ofDate2);
@@ -560,12 +741,23 @@ router.post("/getEmployeeOrderDetailsV2", async function(req,res,next){
     }
 });
 
+//Hansil Changes--------------------------------HANSIL-------------08/02/2021
+
 router.post("/getAllEmployeeOrderHistory", async function(req,res,next){
-    const { ofDate } = req.body;
+    // console.log("-----------------------------HANSIL-------------------------------------------");
+    const { ofDate ,fromDate} = req.body;
+    console.log(req.body);
+    let ofDate2;
     // console.log(req.body);
 
     let ofDate1 = convertStringDateToISO(ofDate);
-    let ofDate2 = convertStringDateToISOPlusOne(ofDate);
+    if(fromDate == undefined){
+        // console.log("scjacnbjsa");
+        ofDate2 = convertStringDateToISOPlusOne(ofDate);
+    }
+    else{
+        ofDate2 = convertStringDateToISOPlusOne(fromDate);
+    }
 
     console.log(ofDate1);
     console.log(ofDate2);
@@ -903,13 +1095,13 @@ router.post('/getOtp', (req, res, next) => {
 //Update Employee Data-----------------MONIL --- 29-01-2021
 router.post("/updateEmployee", async function(req,res,next){
      try {
-         const { employeeId , isFixed , chargePercentPerDelivery , netSalary } = req.body;
-         let existEmployee = await courierSchema.aggregate([
-             {
+        const { employeeId , isFixed , chargePercentPerDelivery , netSalary } = req.body;
+        let existEmployee = await courierSchema.aggregate([
+            {
                  $match: { _id: mongoose.Types.ObjectId(employeeId) }
-             }
-         ]);
-         if(existEmployee.length == 1){
+            }
+        ]);
+        if(existEmployee.length == 1){
             let updateIs;
             if(isFixed == false){
                 updateIs = {
@@ -925,9 +1117,9 @@ router.post("/updateEmployee", async function(req,res,next){
             }
             let updateEmp = await courierSchema.findByIdAndUpdate(employeeId,updateIs);
             res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Employee Data Updated" });
-         }else{
+        }else{
              res.status(200).json({ IsSuccess: true , Data: [] , Message: `No Employee Found at ${employeeId} Id` });
-         }
+        }
      } catch (error) {
          res.status(500).json({ IsSuccess: false , Message: error.message });
      }

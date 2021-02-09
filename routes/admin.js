@@ -590,7 +590,63 @@ function multiDimensionalUnique(arr) {
     }
     return uniques;
 };
-    
+
+router.post("/orders_v2", async function(req,res,next){
+    try {
+        let mysort = { dateTime: -1 };
+        
+        let pendingOrders = await orderSchema
+            .find({ status: "Order Processing" });
+
+        let runningOrders = await orderSchema.find({
+            $or: [
+                { status: "Order Processing" },
+                { status: "Order Picked" },
+                { status: "Order Assigned" },
+            ],
+        });
+
+        let pendingOrderList = [];
+        
+        let runningOrderList = [];
+
+        for(let i=0;i<pendingOrders.length;i++){
+            if(!pendingOrders[i].multiOrderNo){
+                // let pendingSingleOrders = await orderSchema
+                //                             .find({ $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] })
+                //                             .populate(
+                //                                 "courierId",
+                //                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                //                             )
+                //                             .populate("customerId")
+                //                             .sort(mysort);
+
+                // pendingOrderList.push(pendingSingleOrders[0]);
+                let pendingSingleOrders = await orderSchema.aggregate([
+                    {
+                        $match: { $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] }
+                    },
+                    { 
+                        $unwind: "$courierId" 
+                    },
+                    {
+                        $lookup: {
+                                    from: "couriers",
+                                    localField: "courierId[0]",
+                                    foreignField: "_id",
+                                    as: "Courier"
+                                } 
+                    }
+                ]);
+                pendingOrderList.push(pendingSingleOrders[0]);
+            }
+        }
+        res.send(pendingOrderList);
+        // console.log(pendingOrderList);
+    } catch (error) {
+        res.status(500).json({ IsSuccess: true , Message: error.message });
+    }
+});
 
 router.post("/orders_V1",async function(req,res,next){
     try {
@@ -720,7 +776,7 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
         //     .find({ status: "Order Cancelled", isActive: false });
         
         let pendingOrders = await orderSchema
-            .find({ status: "Order Processing" });
+            .find({ status: "Order Processing" }).sort({ dateTime: -1 });
 
         let runningOrders = await orderSchema.find({
             $or: [
@@ -728,7 +784,7 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
                 { status: "Order Picked" },
                 { status: "Order Assigned" },
             ],
-        });
+        }).sort({ dateTime: -1 });
 
         let pendingMultiOrder = [];
         // let cancelMultiOrder = [];
@@ -743,8 +799,8 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
                                                         "courierId",
                                                         "firstName lastName fcmToken mobileNo accStatus transport isVerified"
                                                     )
-                                                    .populate("customerId")
-                                                    .sort({ dateTime: -1 });
+                                                    .populate("customerId");
+
 
                 pendingMultiOrder.push(multiDeliveryOrderList);
                 
@@ -761,8 +817,7 @@ router.post("/getMultipleDeliveryOrder",async function(req,res,next){
                                                     "courierId",
                                                     "firstName lastName fcmToken mobileNo accStatus transport isVerified"
                                                 )
-                                                .populate("customerId")
-                                                .sort({ dateTime: -1 });
+                                                .populate("customerId");
                                                 
                 runningMultiOrder.push(multiDeliveryOrderList);
             }
@@ -827,16 +882,37 @@ router.post("/completed_ordersV2",async function(req,res,next){
         let pageIs = Number(page);
 
         let newdataset = [];
-        let completeOrders = await orderSchema
-            .find({ status: "Order Delivered", isActive: false })
-            .populate(
-                "courierId",
-                "firstName lastName fcmToken mobileNo accStatus transport isVerified"
-            )
-            .populate("customerId")
-            .skip((resPerPageIs * pageIs) - resPerPageIs)
-            .limit(resPerPageIs)
-            .sort({ dateTime: -1 });
+        // let completeOrders = await orderSchema
+        //     .find({ status: "Order Delivered", isActive: false })
+        //     .populate(
+        //         "courierId",
+        //         "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+        //     )
+        //     .populate("customerId")
+        //     .skip((resPerPageIs * pageIs) - resPerPageIs)
+        //     .limit(resPerPageIs)
+        //     .sort({ dateTime: -1 });
+
+        let completeOrders = await orderSchema.aggregate([
+            {
+                $match: {
+                    $and: [
+                        { status: "Order Delivered" },
+                        { isActive: false }
+                    ]
+                }
+            },
+            { $unwind: "$courierId" },
+            {
+                $lookup:
+                    {
+                        from: "couriers",
+                        localField: "courierId",
+                        foreignField: "_id",
+                        as: "Extraa"
+                    }
+            }
+        ]);
 
         let orderscomplete = [];
         for (let i = 0; i < completeOrders.length; i++) {

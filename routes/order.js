@@ -13,6 +13,7 @@ const geolib = require("geolib");
 var request = require('request');
 const mongoose = require("mongoose");
 let moment = require('moment-timezone');
+const scheduleJob = require('node-schedule');
 
 var imguploader = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -1797,11 +1798,7 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
     } = req.body;
     console.log("-------------New Order--------------------------");
     console.log(scheduleTime);
-    // console.log(req.body.amount);
-    // console.log(req.body.amount);
-    // console.log(req.body.discount);
-    // console.log(req.body.additionalAmount);
-    // console.log(req.body.finalAmount);
+    
     var settings = await settingsSchema.find();
     var handlingChargeIs = parseFloat(settings[0].handling_charges);
     const file = req.file;
@@ -1924,7 +1921,7 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
     console.log(newOrderCustomerId);
     let newOrderCustomer = await customerSchema.find({ _id: newOrderCustomerId }).select('name mobileNo -_id');
     
-    let newOrderNotification = `New Order Received 
+    var newOrderNotification = `New Order Received 
     OrderID: ${newOrderData}
     Customer: ${newOrderCustomer[0].name}
     Mobile: ${newOrderCustomer[0].mobileNo}  
@@ -2060,6 +2057,27 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
             };
             await orderSchema.findByIdAndUpdate(placedorder.id, updateorder);
         }
+        if(scheduleDate != undefined && scheduleTime != undefined){
+            let scheduleDateList = scheduleDate.split("-");
+            let scheduleTimeList = scheduleTime.split(":");
+
+            let month = Number(scheduleDateList[1]) - 1;
+            console.log(scheduleDateList,scheduleTimeList);
+            let scheduleIs = new Date(Number(scheduleDateList[0]),month,Number(scheduleDateList[2]),Number(scheduleTimeList[0]),Number(scheduleTimeList[1]));
+
+            console.log(scheduleIs);
+
+            //For TimeZone Setting
+            let date1 = moment(scheduleIs)
+                            .tz("Asia/Calcutta")
+                            .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");  
+            console.log(date1);  
+
+            for(let d=0;d<AdminFcmToken.length;d++){
+                console.log(AdminFcmToken[d]);
+                scheduleNotification(scheduleIs,'Schedule Order',newOrderNotification,AdminFcmToken[d]);
+            }
+        }
         res
             .status(200)
             .json({ Message: "Order Placed!", Data: placedorder, IsSuccess: true });
@@ -2068,6 +2086,78 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
     }
 });
+
+router.post("/scheduleJob", async function(req,res,next){
+    try {
+        const { date, time } = req.body;
+        let dateList = date.split("-");         
+        let timeList = time.split(":");
+        let month = Number(dateList[1]) - 1;
+        console.log(dateList,timeList);
+        let scheduleIs = new Date(Number(dateList[0]),month,Number(dateList[2]),Number(timeList[0]),Number(timeList[1]));
+
+        console.log(scheduleIs);
+        let date1 = moment(scheduleIs)
+                        .tz("Asia/Calcutta")
+                        .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");  
+        console.log(date1);    
+        // console.log(new Date(date1));
+        let a = new Date(date1);    
+        console.log(a);
+        scheduleNotification(scheduleIs,'dsa','gfre','few');   
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+
+function scheduleNotification(date,title,body,token){
+    //schedule Jobs
+    // let newd = new Date(2021,01,09,11,10);
+    // console.log(newd);
+    
+
+    scheduleJob.scheduleJob(date, () =>{
+        console.log("jvnbjdfsanfvjdfsn" + new Date());
+        let payload = {
+            "to":token,
+            "priority":"high",
+            "content_available":true,
+            "data": {
+                "sound": "surprise.mp3",
+                "click_action": "FLUTTER_NOTIFICATION_CLICK"
+            },
+            "notification":{
+                        "body": body,
+                        "title": title,
+                        "badge":1
+                    }
+        };
+        
+        let options = {
+            'method': 'POST',
+            'url': 'https://fcm.googleapis.com/fcm/send',
+            'headers': {
+                'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        };
+        request(options, function (error, response , body) {
+            // console.log("--------------------Sender--------------------");
+            // let myJsonBody = JSON.stringify(body);
+            // console.log(body);
+            
+            if (error) {
+                console.log("==============================================================");
+                console.log(error.message);
+            } else {
+                console.log("Sending Notification Error....!!!");
+                console.log(response.body);
+            }
+        });
+    });
+}
 
 router.post("/test",async function(req,res,next){
     sendMessages("8200682175","Anirudh is on testing....................!!!!!!");
