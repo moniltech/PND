@@ -366,9 +366,22 @@ router.post("/savePickupAddress", async function(req, res, next) {
 });
 
 router.post("/pickupAddress", async function(req, res, next) {
-    const { customerId } = req.body;
+    const { customerId , vendorId } = req.body;
     try {
-        var getaddress = await pickupAddressSchema.find({ customerId: customerId });
+        let getaddress;
+        if(vendorId != undefined && vendorId != null){
+            getaddress = await pickupAddressSchema.aggregate([
+                {
+                    $match: { vendorId: mongoose.Types.ObjectId(vendorId) }
+                }
+            ]);
+        }else{
+            getaddress = await pickupAddressSchema.aggregate([
+                {
+                    $match: { customerId: mongoose.Types.ObjectId(customerId) }
+                }
+            ]);
+        }
         if (getaddress.length != 0) {
             res.status(200).json({
                 Message: "Pickup Address Found!",
