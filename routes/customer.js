@@ -307,7 +307,7 @@ router.post("/savePickupAddress", async function(req, res, next) {
             ]);
             // console.log(checkExistAddress);
             if(checkExistAddress.length >= 1){
-                return res.status(200).json({ IsSuccess: true , Data: [] , Message: "Address Alreay Exist" });
+                return res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Address Alreay Exist" });
             }else{
                 let newaddress = new pickupAddressSchema({
                     _id: new config.mongoose.Types.ObjectId(),
@@ -323,7 +323,7 @@ router.post("/savePickupAddress", async function(req, res, next) {
                     await newaddress.save();
                     res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Address Added!" })
                 }else{
-                    res.status(200).json({ IsSuccess: true , Data: [] , Message: "Address Not Added!" })
+                    res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Address Not Added!" })
                 }
             }
         }else{
