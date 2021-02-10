@@ -285,6 +285,7 @@ router.post("/updateprofile", uploadpic.single("profilepic"), async function(
 router.post("/savePickupAddress", async function(req, res, next) {
     const {
         customerId,
+        vendorId,
         name,
         mobileNo,
         address,
@@ -293,20 +294,72 @@ router.post("/savePickupAddress", async function(req, res, next) {
         completeAddress,
     } = req.body;
     try {
-        let newaddress = new pickupAddressSchema({
-            _id: new config.mongoose.Types.ObjectId(),
-            name: name,
-            mobileNo: mobileNo,
-            address: address,
-            lat: lat,
-            long: long,
-            completeAddress: completeAddress,
-            customerId: customerId,
-        });
-        await newaddress.save();
-        res
-            .status(200)
-            .json({ Message: "Address Added!", Data: 1, IsSuccess: true });
+        if(vendorId != undefined && vendorId != null){
+            let checkExistAddress = await pickupAddressSchema.aggregate([
+                {
+                    $match: {
+                        $and: [
+                            { vendorId: mongoose.Types.ObjectId(vendorId) },
+                            { address: address }
+                        ]
+                    }
+                }
+            ]);
+            // console.log(checkExistAddress);
+            if(checkExistAddress.length >= 1){
+                return res.status(200).json({ IsSuccess: true , Data: checkExistAddress , Message: "Address Alreay Exist" });
+            }else{
+                let newaddress = new pickupAddressSchema({
+                    _id: new config.mongoose.Types.ObjectId(),
+                    name: name,
+                    mobileNo: mobileNo,
+                    address: address,
+                    lat: lat,
+                    long: long,
+                    completeAddress: completeAddress,
+                    vendorId: vendorId,
+                });
+                if(newaddress != null){
+                    await newaddress.save();
+                    res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Address Added!" })
+                }else{
+                    res.status(200).json({ IsSuccess: true , Data: [] , Message: "Address Not Added!" })
+                }
+            }
+        }else{
+            // console.log("------------------CUSTOMER---------------------------");
+            let checkExistAddress = await pickupAddressSchema.aggregate([
+                {
+                    $match: {
+                        $and: [
+                            { customerId: mongoose.Types.ObjectId(customerId) },
+                            { address: address }
+                        ]
+                    }
+                }
+            ]);
+            // console.log(checkExistAddress);
+            if(checkExistAddress.length > 1){
+                return res.status(200).json({ IsSuccess: true , Data: checkExistAddress , Message: "Address Alreay Exist" });
+            }else{
+                let newaddress = new pickupAddressSchema({
+                    _id: new config.mongoose.Types.ObjectId(),
+                    name: name,
+                    mobileNo: mobileNo,
+                    address: address,
+                    lat: lat,
+                    long: long,
+                    completeAddress: completeAddress,
+                    customerId: customerId,
+                });
+                if(newaddress != null){
+                    await newaddress.save();
+                    res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Address Added!" })
+                }else{
+                    res.status(200).json({ IsSuccess: true , Data: [] , Message: "Address Not Added!" })
+                }
+            }
+        }
     } catch (err) {
         res.status(500).json({ Message: err.message, Data: 0, IsSuccess: false });
     }

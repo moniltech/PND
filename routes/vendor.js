@@ -1464,6 +1464,33 @@ router.post("/delorder", async function(req,res,next){
     }
 });
 
+router.post("/testingVendor", async function(req,res,next){
+    try {
+        // let orderData = await orderSchema.find({ _id: '602158e5cbd6ef09be68cd08' })
+        //                                 .populate({
+        //                                     path: 'customerId',
+        //                                     select: 'name email'
+        //                                 });
+        let orderData = await orderSchema.aggregate([
+            {
+                $match: { _id: mongoose.Types.ObjectId('602158e5cbd6ef09be68cd08') }
+            },
+            {
+                $lookup:
+                    {
+                        from: "customers",
+                        localField: "customerId",
+                        foreignField: "_id",
+                        as: "customerDetails"
+                    }
+            }
+        ]);
+        res.send(orderData);
+    } catch (error) {
+        res.status(500).json({ IsSuccess: true , Message: error.message });
+    }
+});
+
 // router.post("/test",async function(req,res,next){
 //     scheduleSampleJob
 // });

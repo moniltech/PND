@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const pickupAddressSchema = mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   customerId: { type: mongoose.Types.ObjectId, ref: "Customers" },
+  vendorId: { type: mongoose.Types.ObjectId, ref: "Vendor" },
   name: {
     type: String,
     required: true,
