@@ -1095,7 +1095,10 @@ router.post('/getOtp', (req, res, next) => {
 //Update Employee Data-----------------MONIL --- 29-01-2021
 router.post("/updateEmployee", async function(req,res,next){
      try {
-        const { employeeId , isFixed , chargePercentPerDelivery , netSalary } = req.body;
+        const { employeeId , isFixed , chargePercentPerDelivery , netSalary , 
+                firstName , lastName , mobileNo , vehicleType , vehicleNo , 
+                bankName , ifscCode , accNo , branch
+            } = req.body;
         let existEmployee = await courierSchema.aggregate([
             {
                  $match: { _id: mongoose.Types.ObjectId(employeeId) }
@@ -1107,12 +1110,30 @@ router.post("/updateEmployee", async function(req,res,next){
                 updateIs = {
                     isFixed: isFixed,
                     netSalary: 0,
-                    chargePercentPerDelivery: chargePercentPerDelivery
+                    chargePercentPerDelivery: chargePercentPerDelivery,
+                    firstName: firstName != undefined ? firstName : existEmployee[0].firstName,
+                    lastName: lastName != undefined ? lastName : existEmployee[0].lastName,
+                    mobileNo: mobileNo != undefined ? mobileNo : existEmployee[0].mobileNo,
+                    'transport.vehicleType': vehicleType != undefined ? vehicleType : existEmployee[0].transport.vehicleType,
+                    'transport.vehicleNo': vehicleNo != undefined ? vehicleNo : existEmployee[0].transport.vehicleNo,
+                    'bankDetail.bankName': bankName != undefined ? bankName : existEmployee[0].bankDetail.bankName,
+                    'bankDetail.ifscCode': ifscCode != undefined ? ifscCode : existEmployee[0].bankDetail.ifscCode,
+                    'bankDetail.accNo': accNo != undefined ? accNo : existEmployee[0].bankDetail.accNo,
+                    'bankDetail.branch': branch != undefined ? branch : existEmployee[0].bankDetail.branch
                 }
             }else{
                 updateIs = {
                     isFixed: isFixed,
-                    netSalary: netSalary
+                    netSalary: netSalary,
+                    firstName: firstName != undefined ? firstName : existEmployee[0].firstName,
+                    lastName: lastName != undefined ? lastName : existEmployee[0].lastName,
+                    mobileNo: mobileNo != undefined ? mobileNo : existEmployee[0].mobileNo,
+                    'transport.vehicleType': vehicleType != undefined ? vehicleType : existEmployee[0].transport.vehicleType,
+                    'transport.vehicleNo': vehicleNo != undefined ? vehicleNo : existEmployee[0].transport.vehicleNo,
+                    'bankDetail.bankName': bankName != undefined ? bankName : existEmployee[0].bankDetail.bankName,
+                    'bankDetail.ifscCode': ifscCode != undefined ? ifscCode : existEmployee[0].bankDetail.ifscCode,
+                    'bankDetail.accNo': accNo != undefined ? accNo : existEmployee[0].bankDetail.accNo,
+                    'bankDetail.branch': branch != undefined ? branch : existEmployee[0].bankDetail.branch
                 }
             }
             let updateEmp = await courierSchema.findByIdAndUpdate(employeeId,updateIs);
