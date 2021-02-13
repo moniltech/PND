@@ -21,6 +21,10 @@ const customerWalletSchema = mongoose.Schema({
         type: String,
         default: ""
     }, 
+    prevWalletAmount: {
+        type: Number,
+        default: 0
+    },
     walletAmount: {
         type: Number,
         default: 0

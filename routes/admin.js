@@ -2905,6 +2905,7 @@ router.post("/getAllExpenseData",async function(req,res,next){
     }
 });
 
+//Add Employee Notes--------------------------------13/02/2021
 router.post("/addEmployeeNotes",async function(req,res,next){
     try {
         const { orderId , noteToEmployee } = req.body;
@@ -2923,6 +2924,25 @@ router.post("/addEmployeeNotes",async function(req,res,next){
             res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Note Added for Employee" });
         }else{
             res.status(200).json({ IsSuccess: true , Data: [] , Message: "Order Request Not Found" });
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+//Get Employee Notes---------------------------------------13/02/2021
+router.post("/getEmployeeNote",async function(req,res,next){
+    try {
+        const { orderId } = req.body;
+        let notesIs = await requestSchema.aggregate([
+            {
+                $match: { orderId: mongoose.Types.ObjectId(orderId) }
+            }
+        ]);
+        if(notesIs.length>0){
+            res.status(200).json({ IsSuccess: true , Data: notesIs , Message: "Notes Found" });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Notes Not Found" });
         }
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });

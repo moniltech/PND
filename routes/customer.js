@@ -523,9 +523,9 @@ router.post('/updateCustomerOneField', async function(req,res,next){
 });
 let moment = require('moment-timezone');
 //Add Money To Wallet of customer---------------------------------12/02/2021
-router.post("/addToWallet", async function(req,res,next){
+router.post("/updateToWallet", async function(req,res,next){
     try {
-        console.log("===================");
+        // console.log("===================");
         const { customerId , credit , debit , discription } = req.body;
         let addToWalletIs;
         let customerIs = await customerSchema.aggregate([
@@ -537,12 +537,13 @@ router.post("/addToWallet", async function(req,res,next){
         console.log(customerIs[0].walletAmount);
         let prevWalletAmount = 0;
         if(customerIs[0].walletAmount){
-            prevWalletAmount = customerIs[0].walletAmount;
+            prevWalletAmount = parseFloat(customerIs[0].walletAmount);
         } 
         if(credit != undefined){
             addToWalletIs = await new customerWalletModel({
                 customerId: customerId,
                 credit: credit,
+                prevWalletAmount: prevWalletAmount,
                 date: getCurrentDate(),
                 time: getCurrentTime(),
                 walletAmount: prevWalletAmount + credit,
@@ -552,6 +553,7 @@ router.post("/addToWallet", async function(req,res,next){
             addToWalletIs = await new customerWalletModel({
                 customerId: customerId,
                 debit: debit,
+                prevWalletAmount: prevWalletAmount,
                 date: getCurrentDate(),
                 time: getCurrentTime(),
                 walletAmount: prevWalletAmount - debit,
@@ -580,6 +582,150 @@ router.post("/addToWallet", async function(req,res,next){
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }
 });
+
+//Customer Wallet Logs ------------------13/02/2021
+router.post("/getWalletRecords", async function(req,res,next){
+    try {
+        const { customerId , fromDate , toDate } = req.body;
+        let checkCustomer = await customerSchema.aggregate([
+            {
+                $match: {
+                    _id: mongoose.Types.ObjectId(customerId)
+                }
+            }
+        ]);
+        let projectRecords = {
+            credit: 1,
+            debit: 1,
+            walletAmount: 1,
+            discription: 1,
+            date: 1,
+            time: 1,
+            customerId: 1,
+            'Customer.name': 1,
+            'Customer.email': 1,
+            'Customer.mobileNo': 1,
+            'Customer.regCode': 1,
+        };
+        let sortDate = { date: -1 , time: -1 };
+        let walletLogsAre;
+        if(checkCustomer.length == 1){
+            if(fromDate != undefined && toDate != undefined && fromDate != null && toDate != null){
+                let datesAre = generateDateList(fromDate,toDate);
+                // console.log(datesAre);
+                walletLogsAre = await customerWalletModel.aggregate([
+                    {
+                        $match: {
+                            customerId : mongoose.Types.ObjectId(customerId),
+                            date: {
+                                $in: datesAre
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "customers",
+                            localField: "customerId",
+                            foreignField: "_id",
+                            as: "Customer"
+                        } 
+                    },
+                    {
+                        $project: projectRecords
+                    },
+                    {
+                        $sort: sortDate
+                    }
+                ]);
+            }else if(toDate && fromDate == undefined){
+                walletLogsAre = await customerWalletModel.aggregate([
+                    {
+                        $match: {
+                            customerId : mongoose.Types.ObjectId(customerId),
+                            date: toDate
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "customers",
+                            localField: "customerId",
+                            foreignField: "_id",
+                            as: "Customer"
+                        } 
+                    },
+                    {
+                        $project: projectRecords
+                    },
+                    {
+                        $sort: sortDate
+                    }
+                ]);
+            }else{
+                walletLogsAre = await customerWalletModel.aggregate([
+                    {
+                        $match: {
+                            customerId : mongoose.Types.ObjectId(customerId)
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "customers",
+                            localField: "customerId",
+                            foreignField: "_id",
+                            as: "Customer"
+                        } 
+                    },
+                    {
+                        $project: projectRecords
+                    },
+                    {
+                        $sort: sortDate
+                    }
+                ]);
+            }
+            if(walletLogsAre.length > 0){
+                res.status(200).json({ 
+                                IsSuccess: true , 
+                                Count: walletLogsAre.length ,
+                                // FinalWalletAmount: , 
+                                Data: walletLogsAre , 
+                                Message: "User Wallet Logs Found" 
+                            });
+            }else{
+                res.status(200).json({ IsSuccess: true , Data: [] , Message: "User Wallet Logs Not Found" });
+            }
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: `No User Found for customerId ${customerId}` });
+        }
+
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+function generateDateList(start, end) {
+    
+    let date1 = start.split("/");
+    let date2 = end.split("/");
+    let fromDate = date1[2] + "-" + date1[1] + "-" + date1[0];
+    let toDate = date2[2] + "-" + date2[1] + "-" + date2[0];
+    
+    fromDate = new Date(fromDate);
+    toDate = new Date(toDate);
+
+    // console.log([fromDate,toDate]);
+    
+    for(var arr=[],dt=new Date(fromDate); dt<=toDate; dt.setDate(dt.getDate()+1)){
+        // console.log(dt);
+        let temp = moment(dt)
+                        .tz("Asia/Calcutta")
+                        .format('DD/MM/YYYY, h:mm:ss a')
+                        .split(',')[0];
+        arr.push(temp);
+        // console.log(temp);
+    }
+    return arr;
+};
 
 function getCurrentDate(){
 
