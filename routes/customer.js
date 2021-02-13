@@ -1,12 +1,12 @@
 require("dotenv").config();
-var express = require("express");
-var multer = require("multer");
-var path = require("path");
-var axios = require("axios");
-var router = express.Router();
-var config = require("../config");
-var mongoose = require("mongoose");
-var upload = multer.diskStorage({
+const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const axios = require("axios");
+const router = express.Router();
+const config = require("../config");
+const mongoose = require("mongoose");
+const upload = multer.diskStorage({
     destination: function(req, file, cb) {
         cb(null, "uploads/customers");
     },
@@ -17,18 +17,20 @@ var upload = multer.diskStorage({
         );
     },
 });
-var uploadpic = multer({ storage: upload });
+const uploadpic = multer({ storage: upload });
 
 /* Data Models */
-var customerSchema = require("../data_models/customer.signup.model");
-var pickupAddressSchema = require("../data_models/pickupaddresses.model");
-var settingsSchema = require("../data_models/settings.model");
-var bannerSchema = require("../data_models/banner.model");
-var promoCodeSchema = require("../data_models/promocode.model");
-var usedpromoSchema = require("../data_models/used.promocode.model");
-var parcelcategories = require("../data_models/category.model");
+const customerSchema = require("../data_models/customer.signup.model");
+const pickupAddressSchema = require("../data_models/pickupaddresses.model");
+const settingsSchema = require("../data_models/settings.model");
+const bannerSchema = require("../data_models/banner.model");
+const promoCodeSchema = require("../data_models/promocode.model");
+const usedpromoSchema = require("../data_models/used.promocode.model");
+const parcelcategories = require("../data_models/category.model");
 const orderRequestModel = require("../data_models/order.request.model");
 const orderModel = require("../data_models/order.model");
+const customerWallet = require("../data_models/customerWalletModel");
+const customerWalletModel = require("../data_models/customerWalletModel");
 
 /* Routes. */
 router.get("/", function(req, res, next) {
@@ -500,5 +502,103 @@ router.post('/getOtp', (req, res, next) => {
         IsSuccess: true
     })
 });
+
+router.post('/updateCustomerOneField', async function(req,res,next){
+    try {
+        let update = {
+            walletAmount : 0
+        }
+        let customers = await customerSchema.aggregate([
+            {
+                $match: {}
+            }
+        ]);
+        for(let i=0;i<customers.length;i++){
+            console.log(customers[i]._id);
+            let updateIs = await customerSchema.findByIdAndUpdate(customers[i]._id,update);
+        }
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+let moment = require('moment-timezone');
+//Add Money To Wallet of customer---------------------------------12/02/2021
+router.post("/addToWallet", async function(req,res,next){
+    try {
+        console.log("===================");
+        const { customerId , credit , debit , discription } = req.body;
+        let addToWalletIs;
+        let customerIs = await customerSchema.aggregate([
+            {
+                $match: { _id: mongoose.Types.ObjectId(customerId) }
+            }
+        ]);
+        // console.log(customerIs);
+        console.log(customerIs[0].walletAmount);
+        let prevWalletAmount = 0;
+        if(customerIs[0].walletAmount){
+            prevWalletAmount = customerIs[0].walletAmount;
+        } 
+        if(credit != undefined){
+            addToWalletIs = await new customerWalletModel({
+                customerId: customerId,
+                credit: credit,
+                date: getCurrentDate(),
+                time: getCurrentTime(),
+                walletAmount: prevWalletAmount + credit,
+                discription: discription,
+            });
+        }else{
+            addToWalletIs = await new customerWalletModel({
+                customerId: customerId,
+                debit: debit,
+                date: getCurrentDate(),
+                time: getCurrentTime(),
+                walletAmount: prevWalletAmount - debit,
+                discription: discription,
+            });
+        }
+
+        if(addToWalletIs != null){
+            
+            if(customerIs.length == 1){
+                let updateIs = {
+                    walletAmount: addToWalletIs.walletAmount
+                }
+                let updateInCustomer = await customerSchema.findByIdAndUpdate(customerId,updateIs);
+                addToWalletIs.save();
+                res.status(200).json({ IsSuccess: true , Data: [addToWalletIs] , Message: "Wallet Data Updated" });
+            }else{
+                res.status(200).json({ IsSuccess: true , Data: [addToWalletIs] , Message: "Please Enter Valid CustomerId" });
+            }
+            
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: [] , Message: "Wallet Data Not Updated" });
+        }
+        
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+function getCurrentDate(){
+
+    let date = moment()
+            .tz("Asia/Calcutta")
+            .format("DD/MM/YYYY, h:mm:ss a")
+            .split(",")[0];
+
+    return date;
+}
+
+function getCurrentTime(){
+
+    let time = moment()
+            .tz("Asia/Calcutta")
+            .format("DD/MM/YYYY, h:mm:ss a")
+            .split(",")[1];
+
+    return time;
+}
 
 module.exports = router;

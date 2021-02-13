@@ -46,7 +46,15 @@ const orderSettingsSchema = mongoose.Schema({
   },
   maxUnderKm: {
     type: Number
-  }
+  },
+  waitingTime: {
+    type: String,
+    default: ""
+  },
+  waitingChargePerMinute: {
+    type: Number,
+    default: 0
+  },
 });
 
 module.exports = mongoose.model("Settings", orderSettingsSchema);

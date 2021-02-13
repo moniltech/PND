@@ -346,7 +346,9 @@ router.post("/updatesetttings", async function (req, res, next) {
         addKmCharge,
         additionalKm2,
         addKmCharge2,
-        maxUnderKm
+        maxUnderKm,
+        waitingTime,
+        waitingChargePerMinute
     } = req.body;
  
     try {
@@ -380,6 +382,8 @@ router.post("/updatesetttings", async function (req, res, next) {
                 additionalKm2 : additionalKm2,
                 addKmCharge2: addKmCharge2,
                 maxUnderKm: maxUnderKm,
+                waitingTime: waitingTime != undefined ? waitingTime : existData[0].waitingTime,
+                waitingChargePerMinute: waitingChargePerMinute != undefined ? waitingChargePerMinute : existData[0].waitingChargePerMinute,
             };
             
             await settingsSchema.findByIdAndUpdate(id, updatedsettings);
@@ -414,7 +418,9 @@ router.post("/updatesetttings", async function (req, res, next) {
                 addKmCharge: addKmCharge,
                 additionalKm2 : additionalKm2,
                 addKmCharge2: addKmCharge2,
-                maxUnderKm: maxUnderKm
+                maxUnderKm: maxUnderKm,
+                waitingTime: waitingTime,
+                waitingChargePerMinute: waitingChargePerMinute
             });
             
             await newsettings.save();

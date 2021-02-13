@@ -36,6 +36,10 @@ const customerSchema = mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  walletAmount: {
+    type: String,
+    default: 0
+  }
 });
 
 module.exports = mongoose.model("Customers", customerSchema);
