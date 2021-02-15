@@ -597,62 +597,107 @@ function multiDimensionalUnique(arr) {
     return uniques;
 };
 
-router.post("/orders_v2", async function(req,res,next){
-    try {
-        let mysort = { dateTime: -1 };
+// router.post("/orders_v2", async function(req,res,next){
+//     try {
+//         let mysort = { dateTime: -1 };
         
-        let pendingOrders = await orderSchema
-            .find({ status: "Order Processing" });
+//         let pendingOrders = await orderSchema
+//             .find({ status: "Order Processing" });
 
-        let runningOrders = await orderSchema.find({
-            $or: [
-                { status: "Order Processing" },
-                { status: "Order Picked" },
-                { status: "Order Assigned" },
-            ],
-        });
+//         let runningOrders = await orderSchema.find({
+//             $or: [
+//                 { status: "Order Processing" },
+//                 { status: "Order Picked" },
+//                 { status: "Order Assigned" },
+//             ],
+//         });
 
-        let pendingOrderList = [];
+//         let pendingOrderList = [];
         
-        let runningOrderList = [];
+//         let runningOrderList = [];
 
-        for(let i=0;i<pendingOrders.length;i++){
-            if(!pendingOrders[i].multiOrderNo){
-                // let pendingSingleOrders = await orderSchema
-                //                             .find({ $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] })
-                //                             .populate(
-                //                                 "courierId",
-                //                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
-                //                             )
-                //                             .populate("customerId")
-                //                             .sort(mysort);
+//         for(let i=0;i<pendingOrders.length;i++){
+//             if(!pendingOrders[i].multiOrderNo){
+//                 // let pendingSingleOrders = await orderSchema
+//                 //                             .find({ $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] })
+//                 //                             .populate(
+//                 //                                 "courierId",
+//                 //                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+//                 //                             )
+//                 //                             .populate("customerId")
+//                 //                             .sort(mysort);
 
-                // pendingOrderList.push(pendingSingleOrders[0]);
-                let pendingSingleOrders = await orderSchema.aggregate([
-                    {
-                        $match: { $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] }
-                    },
-                    { 
-                        $unwind: "$courierId" 
-                    },
-                    {
-                        $lookup: {
-                                    from: "couriers",
-                                    localField: "courierId[0]",
-                                    foreignField: "_id",
-                                    as: "Courier"
-                                } 
-                    }
-                ]);
-                pendingOrderList.push(pendingSingleOrders[0]);
-            }
-        }
-        res.send(pendingOrderList);
-        // console.log(pendingOrderList);
-    } catch (error) {
-        res.status(500).json({ IsSuccess: true , Message: error.message });
-    }
-});
+//                 // pendingOrderList.push(pendingSingleOrders[0]);
+//                 let pendingSingleOrders = await orderSchema.aggregate([
+//                     {
+//                         $match: { $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] }
+//                     },
+//                     { 
+//                         $unwind: "$courierId" 
+//                     },
+//                     {
+//                         $lookup: {
+//                                     from: "couriers",
+//                                     localField: "courierId",
+//                                     foreignField: "_id",
+//                                     as: "Courier"
+//                                 } 
+//                     }
+//                 ]);
+//                 pendingOrderList.push(pendingSingleOrders[0]);
+//             }
+//         }
+
+//         for(let i=0;i<runningOrders.length;i++){
+//             if(!runningOrders[i].multiOrderNo){
+//                 let runnId = runningOrders[i].courierId[0];
+//                 console.log(" id : " + runnId);
+//                 // let runningSingleOrders = await orderSchema
+//                 //                             .find({
+//                 //                                 $and: [ 
+//                 //                                     { orderNo: runningOrders[i].orderNo }, 
+//                 //                                     { $or: [
+//                 //                                         { status: "Order Processing" },
+//                 //                                         { status: "Order Picked" },
+//                 //                                         { status: "Order Assigned" },
+//                 //                                 ] }
+//                 //                              ]
+//                 //                             })
+//                 //                             .populate(
+//                 //                                 "courierId",
+//                 //                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+//                 //                             )
+//                 //                             .populate("customerId")
+//                 //                             .sort(mysort);
+
+//                 // runningOrderList.push(runningSingleOrders[0]);
+
+//                 let runningSingleOrders = await orderSchema.aggregate([
+//                     {
+//                         $match: { $and: [ {status: "Order Processing"}, { orderNo: runningOrders[i].orderNo } ] }
+//                     },
+//                     { 
+//                         $unwind: "$courierId" 
+//                     },
+//                     {
+//                         $lookup: {
+//                                     from: "couriers",
+//                                     localField: "courierId",
+//                                     foreignField: "_id",
+//                                     as: "Courier"
+//                                 } 
+//                     }
+//                 ]);
+//                 runningOrderList.push(runningSingleOrders[0]);
+//             }
+//         }
+//         console.log(runningOrderList.length);
+//         res.send(runningOrderList);
+//         // console.log(pendingOrderList);
+//     } catch (error) {
+//         res.status(500).json({ IsSuccess: true , Message: error.message });
+//     }
+// });
 
 router.post("/orders_V1",async function(req,res,next){
     try {
@@ -676,6 +721,19 @@ router.post("/orders_V1",async function(req,res,next){
 
         for(let i=0;i<pendingOrders.length;i++){
             if(!pendingOrders[i].multiOrderNo){
+                let orderid = pendingOrders[i]._id;
+                let noteIs = await requestSchema.aggregate([
+                    {
+                        $match : { orderId : mongoose.Types.ObjectId(orderid) }
+                    },
+                    {
+                        $project : { 
+                            noteFromAdmin: 1
+                        }
+                    }
+                ]);
+                // console.log(noteIs);
+
                 let pendingSingleOrders = await orderSchema
                                             .find({ $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] })
                                             .populate(
@@ -684,13 +742,29 @@ router.post("/orders_V1",async function(req,res,next){
                                             )
                                             .populate("customerId")
                                             .sort(mysort);
+                
+                let dataSendIs = {
+                    note: noteIs[0].noteFromAdmin,
+                    PendingOrder: pendingSingleOrders[0]
+                }
 
-                pendingOrderList.push(pendingSingleOrders[0]);
+                pendingOrderList.push(dataSendIs);
             }
         }
 
         for(let i=0;i<runningOrders.length;i++){
             if(!runningOrders[i].multiOrderNo){
+                let orderid = runningOrders[i]._id;
+                let noteIs = await requestSchema.aggregate([
+                    {
+                        $match : { orderId : mongoose.Types.ObjectId(orderid) }
+                    },
+                    {
+                        $project : { 
+                            noteFromAdmin: 1
+                        }
+                    }
+                ]);
                 let runningSingleOrders = await orderSchema
                                             .find({
                                                 $and: [ 
@@ -709,7 +783,12 @@ router.post("/orders_V1",async function(req,res,next){
                                             .populate("customerId")
                                             .sort(mysort);
 
-                runningOrderList.push(runningSingleOrders[0]);
+                    let dataSendIs = {
+                        note: noteIs[0].noteFromAdmin,
+                        RunningOrder: runningSingleOrders[0]
+                    }
+
+                runningOrderList.push(dataSendIs);
             }
         }
 
