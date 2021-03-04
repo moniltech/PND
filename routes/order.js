@@ -2096,14 +2096,17 @@ router.post("/scheduleJob", async function(req,res,next){
         console.log(dateList,timeList);
         let scheduleIs = new Date(Number(dateList[0]),month,Number(dateList[2]),Number(timeList[0]),Number(timeList[1]));
 
-        console.log(scheduleIs);
-        let date1 = moment(scheduleIs)
-                        .tz("Asia/Calcutta")
-                        .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");  
-        console.log(date1);    
-        // console.log(new Date(date1));
-        let a = new Date(date1);    
-        console.log(a);
+        scheduleIs = moment(scheduleIs).subtract(30, "minutes").toDate();
+
+        console.log(`Noti -----------------${scheduleIs}`);
+        // let date1 = moment(scheduleIs)
+        //                 .tz("Asia/Calcutta")
+        //                 .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");  
+        
+        // // console.log(date1);    
+        
+        // let a = new Date(date1);    
+        // console.log(a);
         scheduleNotification(scheduleIs,'dsa','gfre','few');   
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
@@ -2118,7 +2121,7 @@ function scheduleNotification(date,title,body,token){
     
 
     scheduleJob.scheduleJob(date, () =>{
-        console.log("jvnbjdfsanfvjdfsn" + new Date());
+        console.log("Notification Send at" + new Date());
         let payload = {
             "to":token,
             "priority":"high",
@@ -2600,13 +2603,6 @@ router.post("/activeOrdersV2", async function (req, res, next) {
             completeOrderIs.push(complete_Record[j].orderNo);
         }
         let completeUnique = completeOrderIs.filter(onlyUnique);
-
-        // let comRes = [];
-        // for(let k=0;k<completeUnique.length;k++){
-        //     console.log(completeUnique[k]);
-        //     let orderData = await orderSchema.find({ orderNo: completeUnique[k] , isActive: false });
-        //     comRes.push(orderData);
-        // }
 
         let aciveOrderIs = [];
         for(let i=0;i<record.length;i++){
@@ -3397,7 +3393,7 @@ router.post("/cancelOrderV1", async function(req,res,next){
 
 
             let diff = diff_minutes(scheduleTimeOf,currentTime);
-            console.log(diff);
+            // console.log(diff);
 
             if(diff > 15){
                 // var deleteOrder = await orderSchema.findByIdAndDelete(orderIs[0]._id);
@@ -3408,7 +3404,7 @@ router.post("/cancelOrderV1", async function(req,res,next){
                 var deleteOrder = await orderSchema.findByIdAndUpdate(orderIs[jk]._id,updateIs);
                
             }else if(diff < 0){
-                return res.status(200).json({ IsSuccess: true , Data: 1 ,Message: "Schedule Time Passed Away" });
+                return res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Schedule Time Passed Away" });
             }else{
                 return res.status(200).json({ IsSuccess: true , Data: 0 , Message: "Order Cannot be Deleted Before 15 Minutes of ScheduleTime" });
             }
