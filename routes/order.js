@@ -2065,13 +2065,14 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
             console.log(scheduleDateList,scheduleTimeList);
             let scheduleIs = new Date(Number(scheduleDateList[0]),month,Number(scheduleDateList[2]),Number(scheduleTimeList[0]),Number(scheduleTimeList[1]));
 
-            console.log(scheduleIs);
+            scheduleIs = moment(scheduleIs).subtract(30, "minutes").toDate();
+            console.log("schedule alert time is here---------------------------------------------------------"+scheduleIs);
 
-            //For TimeZone Setting
-            let date1 = moment(scheduleIs)
-                            .tz("Asia/Calcutta")
-                            .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");  
-            console.log(date1);  
+            // //For TimeZone Setting
+            // let date1 = moment(scheduleIs)
+            //                 .tz("Asia/Calcutta")
+            //                 .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");  
+            // console.log(date1);  
 
             for(let d=0;d<AdminFcmToken.length;d++){
                 console.log(AdminFcmToken[d]);
@@ -2099,14 +2100,7 @@ router.post("/scheduleJob", async function(req,res,next){
         scheduleIs = moment(scheduleIs).subtract(30, "minutes").toDate();
 
         console.log(`Noti -----------------${scheduleIs}`);
-        // let date1 = moment(scheduleIs)
-        //                 .tz("Asia/Calcutta")
-        //                 .format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");  
         
-        // // console.log(date1);    
-        
-        // let a = new Date(date1);    
-        // console.log(a);
         scheduleNotification(scheduleIs,'dsa','gfre','few');   
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
