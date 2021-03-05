@@ -1033,14 +1033,51 @@ router.post("/ordercalcV3", async (req, res, next) => {
         }
         
         console.log(dataset);
-        
+
+        // let sendDataIs = {};
+
+        if(roundTrip === true){
+            console.log("----------------------------ROUND TRIP ------------------------------------------");
+            sendDataIs = {
+                note: note,
+                totaldistance: ( Math.round(totaldistance.toFixed(2)) * 2 ),
+                totaldistamt: ( Number(distamt) * 2 ),
+                extracharges: extracharges,
+                extadeliverycharges: Math.ceil(extadeliverycharges.toFixed(2)),
+                amount: amt * 2,
+                promoused: Math.ceil(promoused.toFixed(2)),
+                totalamt: netamount * 2
+            }
+
+            console.log(sendDataIs);
+
+
+        }else{
+            console.log("---------------------------- Single TRIP ------------------------------------------");
+
+            sendDataIs = {
+                note: note,
+                totaldistance: Math.round(totaldistance.toFixed(2)),
+                totaldistamt: Number(distamt),
+                extracharges: extracharges,
+                extadeliverycharges: Math.ceil(extadeliverycharges.toFixed(2)),
+                amount: amt,
+                promoused: Math.ceil(promoused.toFixed(2)),
+                totalamt: netamount
+            }
+
+            console.log(sendDataIs);
+
+        }
+
     }
-    if(req.body.amountCollected){
-        let chargeIs = handlingChargeIs * 100 + "%";
-        res.json({ Message: "Calculation Found!", HandlingCharge: chargeIs ,Data: dataset, IsSuccess: true });
-    }else{
-        res.json({ Message: "Calculation Found!", Data: dataset, IsSuccess: true });
-    }
+    // console.log(sendDataIs);
+    // if(req.body.amountCollected){
+    //     let chargeIs = handlingChargeIs * 100 + "%";
+    //     res.json({ Message: "Calculation Found!", HandlingCharge: chargeIs ,Data: dataset, IsSuccess: true });
+    // }else{
+    //     res.json({ Message: "Calculation Found!", Data: dataset, IsSuccess: true });
+    // }
 });
 
 //---------------------------Checking-------------------------(26-12-2020)
