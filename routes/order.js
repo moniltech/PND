@@ -211,10 +211,6 @@ async function PNDfinder(pickuplat, pickuplong, orderid, deliveryType) {
     return available;
 }
 
-router.post("/testEMP",async function(req,res,next){
-    PNDfinder("21.186025822785844" , "72.79283153971866" , "5ff979b382a5b2719caf3ac6","Normal Delivery")
-});
-
 //PND Finder for Multiple delivery Order-----06/01/2021----MONIL
 async function PNDMTfinder(pickuplat, pickuplong, orderid, deliveryType) {
     let available = [];
@@ -637,6 +633,7 @@ router.post("/ordercalcV2", async (req, res, next) => {
     res.json({ Message: "Calculation Found!", Data: dataset, IsSuccess: true });
 });
 
+//Order Calc for single order price calculation------05/03/2021
 router.post("/ordercalcV3", async (req, res, next) => {
     const {
         customerId,
@@ -648,6 +645,7 @@ router.post("/ordercalcV3", async (req, res, next) => {
         promocode,
         parcelcontents,
         amountCollected,
+        roundTrip,
     } = req.body;
 
     // console.log("OrderCalcV2 Request Body.................!!!!");
@@ -1035,6 +1033,7 @@ router.post("/ordercalcV3", async (req, res, next) => {
         }
         
         console.log(dataset);
+        
     }
     if(req.body.amountCollected){
         let chargeIs = handlingChargeIs * 100 + "%";
@@ -1082,8 +1081,8 @@ router.post("/testingM", async function(req,res,next){
     // console.log(a);
 });
 
-//----------------------------OrderCalcV4(Addtional charges for above 10KM)--------------------
-
+//----------------------------OrderCalcV4(Addtional charges for above 10KM) --------------------
+// Order Calc for multiple order price calculation
 router.post("/ordercalcV4", async (req, res, next) => {
     const {
         customerId,
@@ -1805,6 +1804,7 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
         TransactionId,
         noteByCustomer,
         extraKmByCourierBoy,
+        roundTrip,
     } = req.body;
     console.log("-------------New Order--------------------------");
     console.log(scheduleTime);
@@ -1852,7 +1852,7 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
             collectCash: collectCash,
             amountCollection: amountCollection == "" ? "0" : amountCollection,
             handlingCharge: handlingChargeIs,
-            // eOrderDeliveryType: eOrderDeliveryType,
+            roundTrip: roundTrip,
             promoCode: promoCode,
             amount: amount,
             discount: discount,
@@ -1864,8 +1864,8 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
         });
         // console.log("---------------amount Collected-----------");
         // console.log(newOrder);
-        var placedorder = await newOrder.save();
-        // var placedorder = newOrder;
+        // var placedorder = await newOrder.save();
+        var placedorder = newOrder;
 
         var avlcourier = await PNDfinder(
             pkLat,

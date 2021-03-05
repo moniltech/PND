@@ -3217,7 +3217,7 @@ router.post("/addAPKVersion", async function(req,res,next){
 //Update APK Details------------------------------MONIL----------------06/02/2021
 router.post("/updateAPKVersion", async function(req,res,next){
     try {
-        const { androidVersion , iosVersion , tinyURL } = req.body;
+        const { androidVersion , iosVersion , tinyURL , shareURL , message } = req.body;
 
         let Record = await apkDetails.find();
         if(record.length == 1){
@@ -3225,6 +3225,8 @@ router.post("/updateAPKVersion", async function(req,res,next){
                 androidVersion: androidVersion != undefined ? androidVersion : record[0].androidVersion,
                 iosVersion: iosVersion != undefined ? iosVersion : record[0].iosVersion,
                 tinyURL: tinyURL != undefined ? tinyURL : record[0].tinyURL,
+                shareURL: shareURL,
+                message: message 
             }
             let updateRecord = await apkDetails.findByIdAndUpdate(record[0]._id,updateIs);
             res.status(200).json({ IsSuccess: true , Data: 1 , Message: "Apk version updated" });

@@ -6,6 +6,8 @@ const axios = require("axios");
 const router = express.Router();
 const config = require("../config");
 const mongoose = require("mongoose");
+const moment = require('moment-timezone');
+
 const upload = multer.diskStorage({
     destination: function(req, file, cb) {
         cb(null, "uploads/customers");
@@ -36,6 +38,15 @@ const customerWalletModel = require("../data_models/customerWalletModel");
 router.get("/", function(req, res, next) {
     res.render("index", { title: "Invalid URL" });
 });
+
+function getRandomString(length) {
+    var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    var result = '';
+    for ( var i = 0; i < length; i++ ) {
+        result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+    }
+    return result;
+}
 
 //required functions
 function registrationCode() {
@@ -81,7 +92,7 @@ router.post("/signup", async function(req, res, next) {
 });
 
 router.post("/signup2", async function(req, res, next) {
-    const { name, mobileNo, email, referalCode } = req.body;
+    const { name, mobileNo, email } = req.body;
     try {
         let existCustomer = await customerSchema.find({ mobileNo: mobileNo });
         if (existCustomer.length == 1) {
@@ -98,7 +109,7 @@ router.post("/signup2", async function(req, res, next) {
                 name: name,
                 email: email,
                 mobileNo: mobileNo,
-                referalCode: referalCode,
+                referalCode: getRandomString(6),
                 regCode: registrationCode(),
             });
             let data = await newCustomer.save();
@@ -505,9 +516,7 @@ router.post('/getOtp', (req, res, next) => {
 
 router.post('/updateCustomerOneField', async function(req,res,next){
     try {
-        let update = {
-            walletAmount : 0
-        }
+        
         let customers = await customerSchema.aggregate([
             {
                 $match: {}
@@ -515,13 +524,46 @@ router.post('/updateCustomerOneField', async function(req,res,next){
         ]);
         for(let i=0;i<customers.length;i++){
             console.log(customers[i]._id);
+            let update = {
+                referalCode : getRandomString(6)
+            }
+            console.log(update);
             let updateIs = await customerSchema.findByIdAndUpdate(customers[i]._id,update);
         }
     } catch (error) {
         res.status(500).json({ IsSuccess: false , Message: error.message });
     }
 });
-let moment = require('moment-timezone');
+
+//Get Customer Wallet amount-----------------------------SOHIL----------05/03/2021
+router.post("/getCustomerWallet", async function(req,res,next){
+    try {
+        const { customerId } = req.body;
+
+        let customerWallet = await customerSchema.aggregate([
+            {
+                $match: {
+                    _id: mongoose.Types.ObjectId(customerId)
+                }
+            },
+            {
+                $project: {
+                    walletAmount: 1
+                }   
+            }
+        ]); 
+
+        if(customerWallet.length == 1){
+            res.status(200).json({ IsSuccess: true , Data: customerWallet , Message: `Customer wallet Current price is ${customerWallet[0].walletAmount}` });
+        }else{
+            res.status(200).json({ IsSuccess: true , Data: customerWallet , Message: `No Customer found for customer id ${customerId}` });
+        }
+
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
 //Add Money To Wallet of customer---------------------------------12/02/2021
 router.post("/updateToWallet", async function(req,res,next){
     try {
@@ -542,7 +584,7 @@ router.post("/updateToWallet", async function(req,res,next){
         if(credit != undefined){
             addToWalletIs = await new customerWalletModel({
                 customerId: customerId,
-                credit: credit,
+                credit: Number(credit),
                 prevWalletAmount: prevWalletAmount,
                 date: getCurrentDate(),
                 time: getCurrentTime(),
@@ -550,9 +592,12 @@ router.post("/updateToWallet", async function(req,res,next){
                 discription: discription,
             });
         }else{
+            if(prevWalletAmount < debit){
+                return res.status(200).json({ IsSuccess: true , Data: [] , CurrentBalance: prevWalletAmount , Message: "You have insufficient balance" });
+            }
             addToWalletIs = await new customerWalletModel({
                 customerId: customerId,
-                debit: debit,
+                debit: Number(debit),
                 prevWalletAmount: prevWalletAmount,
                 date: getCurrentDate(),
                 time: getCurrentTime(),

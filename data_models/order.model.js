@@ -183,6 +183,10 @@ const orderSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
+    roundTrip: {
+        type: Boolean,
+        default: false
+    }
 });
 
 module.exports = mongoose.model("Orders", orderSchema);

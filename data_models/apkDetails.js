@@ -13,6 +13,14 @@ const apkDetailsSchema = mongoose.Schema({
         type: String,
         default: ""
     }, 
+    shareURL: {
+        type: String,
+        default: ""
+    }, 
+    message: {
+        type: String,
+        default: ""
+    }, 
 });
 
 module.exports = mongoose.model("apkDetails", apkDetailsSchema);
