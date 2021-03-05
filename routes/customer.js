@@ -111,6 +111,7 @@ router.post("/signup2", async function(req, res, next) {
                 mobileNo: mobileNo,
                 referalCode: getRandomString(6),
                 regCode: registrationCode(),
+                walletAmount: 0,
             });
             let data = await newCustomer.save();
             if (data != null) {
