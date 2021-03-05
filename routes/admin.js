@@ -704,8 +704,19 @@ router.post("/orders_V1",async function(req,res,next){
 
         let mysort = { dateTime: -1 };
         
-        let pendingOrders = await orderSchema
-            .find({ status: "Order Processing" });
+        // let pendingOrders = await orderSchema
+        //     .find({ status: "Order Processing" });
+
+        let pendingOrders = await orderSchema.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { status: "Order Processing" },
+                        { status: "Admin" },
+                    ]
+                }
+            }
+        ]);
 
         let runningOrders = await orderSchema.find({
             $or: [
@@ -722,33 +733,46 @@ router.post("/orders_V1",async function(req,res,next){
         for(let i=0;i<pendingOrders.length;i++){
             if(!pendingOrders[i].multiOrderNo){
                 let orderid = pendingOrders[i]._id;
+                // console.log(pendingOrders[i]);
                 let noteIs = await requestSchema.aggregate([
                     {
                         $match : { orderId : mongoose.Types.ObjectId(orderid) }
-                    },
-                    {
-                        $project : { 
-                            noteFromAdmin: 1
-                        }
                     }
                 ]);
                 // console.log(noteIs);
+                let noteFromRequest;
+                if(noteIs.length > 0){
+                    noteFromRequest = noteIs[0].noteFromAdmin
+                }else{
+                    noteFromRequest = ''
+                }
 
+                // let pendingSingleOrders = await orderSchema
+                //                             .find({ $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] })
+                //                             .populate(
+                //                                 "courierId",
+                //                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
+                //                             )
+                //                             .populate("customerId")
+                //                             .sort(mysort);
                 let pendingSingleOrders = await orderSchema
-                                            .find({ $and: [ {status: "Order Processing"}, { orderNo: pendingOrders[i].orderNo } ] })
+                                            .find({ orderNo: pendingOrders[i].orderNo })
                                             .populate(
                                                 "courierId",
                                                 "firstName lastName fcmToken mobileNo accStatus transport isVerified"
                                             )
                                             .populate("customerId")
                                             .sort(mysort);
-                
-                let dataSendIs = {
-                    note: noteIs[0].noteFromAdmin,
-                    PendingOrder: pendingSingleOrders[0]
-                }
 
-                pendingOrderList.push(dataSendIs);
+                if(pendingSingleOrders.length == 1){
+                    let dataSendIs = {
+                        note: noteFromRequest,
+                        PendingOrder: pendingSingleOrders[0]
+                    }
+    
+                    pendingOrderList.push(dataSendIs);
+                }
+                
             }
         }
 

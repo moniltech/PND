@@ -103,6 +103,14 @@ async function GoogleMatrix(fromlocation, tolocation) {
     return distancebe / 1000;
 }
 
+router.post("/checkPNDFinder", async function(req,res,next){
+    try {
+        PNDfinder('21.1408254','72.8032878','6041ba15b5b6b51622fcf024','Express Delivery')
+    } catch (error) {
+        res.status(500).json({ IsSuccess: true , Message: error.message });
+    }
+});
+
 async function PNDfinder(pickuplat, pickuplong, orderid, deliveryType) {
     let available = [];
     let getpndpartners = await courierSchema
@@ -162,10 +170,12 @@ async function PNDfinder(pickuplat, pickuplong, orderid, deliveryType) {
     } else {
         for (let i = 0; i < getpndpartners.length; i++) {
             let partnerlocation = await currentLocation(getpndpartners[i].id);
+            console.log(partnerlocation);0
             if (
                 (partnerlocation.duty == "ON") &
                 (Number(partnerlocation.parcel) == 0)
             ) {
+                console.log("================================Jo BAKA=========================================");
                 let totalrequests = await requestSchema.countDocuments({
                     orderId: orderid,
                 });
