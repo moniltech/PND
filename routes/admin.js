@@ -782,14 +782,11 @@ router.post("/orders_V1",async function(req,res,next){
                 let noteIs = await requestSchema.aggregate([
                     {
                         $match : { orderId : mongoose.Types.ObjectId(orderid) }
-                    },
-                    {
-                        $project : { 
-                            noteFromAdmin: 1
-                        }
                     }
                 ]);
-                let runningSingleOrders = await orderSchema
+                // console.log(noteIs);
+                if(noteIs.length > 0){
+                    let runningSingleOrders = await orderSchema
                                             .find({
                                                 $and: [ 
                                                     { orderNo: runningOrders[i].orderNo }, 
@@ -812,7 +809,8 @@ router.post("/orders_V1",async function(req,res,next){
                         RunningOrder: runningSingleOrders[0]
                     }
 
-                runningOrderList.push(dataSendIs);
+                    runningOrderList.push(dataSendIs);
+                }
             }
         }
 
@@ -1682,6 +1680,7 @@ router.post("/AssignOrder", async function (req, res, next) {
         let OrderData = await orderSchema.find({ _id: orderId, isActive: true });
         let courierboy = await courierSchema.find({ _id: courierId });
         if (OrderData.length == 1) {
+            console.log("-------------------");
             let location = await currentLocation(courierId);
             let pick = {
                 latitude: OrderData[0].pickupPoint.lat,
@@ -1795,6 +1794,8 @@ router.post("/AssignOrder_V1", async function (req, res, next) {
         let OrderData = await orderSchema.find({ orderNo: orderId, isActive: true });
         let courierboy = await courierSchema.find({ _id: courierId });
  
+        console.log(OrderData);
+        console.log(courierboy);
         if (OrderData.length > 0) {
             let location = await currentLocation(courierId);
             let pick = {
