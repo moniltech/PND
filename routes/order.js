@@ -1960,9 +1960,9 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
         });
         // console.log("---------------amount Collected-----------");
         // console.log(newOrder);
-        // var placedorder = await newOrder.save();
+        var placedorder = await newOrder.save();
 
-        var placedorder = newOrder;
+        // var placedorder = newOrder;
         console.log("Place Order ID : "+ placedorder._id);
         console.log("Place Order typw : "+ placedorder.deliveryType);
         console.log("Place Order loc : "+ [pkLat,pkLong]);
