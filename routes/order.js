@@ -105,7 +105,7 @@ async function GoogleMatrix(fromlocation, tolocation) {
 
 router.post("/checkPNDFinder", async function(req,res,next){
     try {
-        PNDfinder('21.1408254','72.8032878','6041ba15b5b6b51622fcf024','Express Delivery')
+        PNDfinder('21.1408254','72.8032878','5ef311265228f51b384534b0','Express Delivery')
     } catch (error) {
         res.status(500).json({ IsSuccess: true , Message: error.message });
     }
@@ -121,7 +121,7 @@ async function PNDfinder(pickuplat, pickuplong, orderid, deliveryType) {
         })
         .select("id fcmToken");
     console.log("-------------Get PND Partner-----------------------------------");
-    // console.log(getpndpartners);
+    console.log(getpndpartners);
 
     if (deliveryType == "Normal Delivery") {
         for (let i = 0; i < getpndpartners.length; i++) {
@@ -168,21 +168,30 @@ async function PNDfinder(pickuplat, pickuplong, orderid, deliveryType) {
         console.log("ifffffffffff Normal");
         console.log(available);
     } else {
+        console.log("===================================================For Express=========================================================");
         for (let i = 0; i < getpndpartners.length; i++) {
-            let partnerlocation = await currentLocation(getpndpartners[i].id);
-            console.log(partnerlocation);0
-            if (
-                (partnerlocation.duty == "ON") &
-                (Number(partnerlocation.parcel) == 0)
-            ) {
+            // console.log(getpndpartners[i]._id);
+            let partnerIdIs = String(getpndpartners[i]._id);
+            let partnerlocation = await currentLocation(partnerIdIs);
+            // console.log(partnerlocation);
+            let partnerDuty = partnerlocation.duty;
+            let partnerLat = partnerlocation.latitude != 'null' | null | undefined | 'undefined' ? partnerlocation.latitude : "";
+            let partnerLong = partnerlocation.longitude != 'null' | null | undefined | 'undefined' ? partnerlocation.longitude : "";
+            let partnerParcel = Number(partnerlocation.parcel);
+
+            if (partnerDuty == "ON" && partnerLat != '' && partnerLong != '' && partnerParcel == 0) {
                 console.log("================================Jo BAKA=========================================");
+                console.log(partnerDuty , partnerLat , partnerLong , partnerParcel );
                 let totalrequests = await requestSchema.countDocuments({
                     orderId: orderid,
                 });
                 let partnerrequest = await requestSchema.find({
-                    courierId: getpndpartners[i].id,
+                    courierId: getpndpartners[i]._id,
                     orderId: orderid,
                 });
+
+                // console.log(partnerrequest);
+                
                 if (totalrequests <= 4) {
                     if (partnerrequest.length == 0) {
                         let pickupcoords = { latitude: pickuplat, longitude: pickuplong };
@@ -190,6 +199,7 @@ async function PNDfinder(pickuplat, pickuplong, orderid, deliveryType) {
                             latitude: partnerlocation.latitude,
                             longitude: partnerlocation.longitude,
                         };
+                        console.log([pickupcoords,partnercoords])
                         let distancebtnpp = await GoogleMatrix(pickupcoords, partnercoords);
                         if (distancebtnpp <= 15) {
                             available.push({
@@ -262,7 +272,7 @@ async function PNDMTfinder(pickuplat, pickuplong, orderid, deliveryType) {
         }
     } else {
         for (let i = 0; i < getpndpartners.length; i++) {
-            let partnerlocation = await currentLocation(getpndpartners[i].id);
+            let partnerlocation = await currentLocation(getpndpartners[i]._id);
             if (
                 (partnerlocation.duty == "ON") &
                 (Number(partnerlocation.parcel) == 0)
@@ -360,16 +370,65 @@ router.post("/sendText", async function(req,res,next){
     }
 });
 
+router.post("/checkLocation",async function(req,res,next){
+    try {
+        // const { courierId } = req.body;
+        // let dataIs = await currentLocation(courierId);
+
+        let ids = [];
+
+        let emp = await courierSchema.aggregate([
+            {
+                $match: {  }
+            },
+            {
+                $project: {
+                    firstName: 1
+                }
+            }
+        ]);
+
+        emp.forEach(async function(e){
+            // console.log(e);
+            // console.log(e._id);
+            let empIdIs = String(e._id);
+            console.log(empIdIs);
+            let dataIs = await currentLocation(empIdIs);
+            console.log("vgdfsfvbg :"+dataIs);
+        })
+
+        res.send(dataIs);
+    } catch (error) {
+        res.status(500).json({ IsSuccess: false , Message: error.message });
+    }
+});
+
+// async function currentLocation(courierId) {
+//     console.log(courierId);
+//     // console.log(config.docref)
+//     var CourierRef = config.docref.child(courierId);
+//     // console.log(CourierRef);
+//     const data = await CourierRef.once("value")
+//         .then((snapshot) => snapshot.val())
+//         .catch((err) => err);
+//     console.log("---------");
+//     console.log(data);
+//     console.log("---------");
+//     // return data;
+// }
+
 async function currentLocation(courierId) {
-    console.log(courierId);
-    var CourierRef = config.docref.child(courierId);
-    const data = await CourierRef.once("value")
-        .then((snapshot) => snapshot.val())
-        .catch((err) => err);
-    // console.log("---------");
-    // // console.log(data);
-    // console.log("---------");
-    return data;
+
+    try {
+        var CourierRef = config.docref.child(courierId);
+        // console.log(CourierRef);
+        const data = await CourierRef.once("value")
+            .then((snapshot) => snapshot.val())
+            .catch((err) => err);   
+        return data;
+    } catch (error) {
+        console.log(error.message);
+    }   
 }
 
 //customers app APIs
@@ -1072,12 +1131,12 @@ router.post("/ordercalcV3", async (req, res, next) => {
 
     }
     // console.log(sendDataIs);
-    // if(req.body.amountCollected){
-    //     let chargeIs = handlingChargeIs * 100 + "%";
-    //     res.json({ Message: "Calculation Found!", HandlingCharge: chargeIs ,Data: dataset, IsSuccess: true });
-    // }else{
-    //     res.json({ Message: "Calculation Found!", Data: dataset, IsSuccess: true });
-    // }
+    if(req.body.amountCollected){
+        let chargeIs = handlingChargeIs * 100 + "%";
+        res.json({ Message: "Calculation Found!", HandlingCharge: chargeIs ,Data: sendDataIs, IsSuccess: true });
+    }else{
+        res.json({ Message: "Calculation Found!", Data: dataset, IsSuccess: true });
+    }
 });
 
 //---------------------------Checking-------------------------(26-12-2020)
@@ -1902,14 +1961,19 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
         // console.log("---------------amount Collected-----------");
         // console.log(newOrder);
         // var placedorder = await newOrder.save();
-        var placedorder = newOrder;
 
+        var placedorder = newOrder;
+        console.log("Place Order ID : "+ placedorder._id);
+        console.log("Place Order typw : "+ placedorder.deliveryType);
+        console.log("Place Order loc : "+ [pkLat,pkLong]);
         var avlcourier = await PNDfinder(
             pkLat,
             pkLong,
-            placedorder.id,
+            placedorder._id,
             placedorder.deliveryType
         );
+
+        // res.send(avlcourier);
         
         if (promoCode != "0") {
             let usedpromo = new usedpromoSchema({
@@ -1933,139 +1997,139 @@ router.post("/newoder2", orderimg.single("orderimg"), async function (
             });
             await newrequest.save();
 
-    var AdminMobile = await settingsSchema.find({}).select('AdminMObile1 AdminMObile2 AdminMObile3 AdminMObile4 AdminMObile5 -_id');
-    console.log("Admin numbers-------------------------------------------------");
-    console.log(AdminMobile);
-    var AdminNumber1 = AdminMobile[0].AdminMObile1; 
-    var AdminNumber2 = AdminMobile[0].AdminMObile2; 
-    var AdminNumber3 = AdminMobile[0].AdminMObile3; 
-    var AdminNumber4 = AdminMobile[0].AdminMObile4; 
-    var AdminNumber5 = AdminMobile[0].AdminMObile5;
+            var AdminMobile = await settingsSchema.find({}).select('AdminMObile1 AdminMObile2 AdminMObile3 AdminMObile4 AdminMObile5 -_id');
+            console.log("Admin numbers-------------------------------------------------");
+            console.log(AdminMobile);
+            var AdminNumber1 = AdminMobile[0].AdminMObile1; 
+            var AdminNumber2 = AdminMobile[0].AdminMObile2; 
+            var AdminNumber3 = AdminMobile[0].AdminMObile3; 
+            var AdminNumber4 = AdminMobile[0].AdminMObile4; 
+            var AdminNumber5 = AdminMobile[0].AdminMObile5;
     
-    console.log(AdminNumber1);
+            console.log(AdminNumber1);
 
-    var findAdminFcmToken = await customerSchema.find({ mobileNo: AdminNumber1 }).select('fcmToken -_id');
-    var findAdminFcmToken2 = await customerSchema.find({ mobileNo: AdminNumber2 }).select('fcmToken -_id');
-    var findAdminFcmToken3 = await customerSchema.find({ mobileNo: AdminNumber3 }).select('fcmToken -_id');
-    var findAdminFcmToken4 = await customerSchema.find({ mobileNo: AdminNumber4 }).select('fcmToken -_id');
-    var findAdminFcmToken5 = await customerSchema.find({ mobileNo: AdminNumber5 }).select('fcmToken -_id');
+            var findAdminFcmToken = await customerSchema.find({ mobileNo: AdminNumber1 }).select('fcmToken -_id');
+            var findAdminFcmToken2 = await customerSchema.find({ mobileNo: AdminNumber2 }).select('fcmToken -_id');
+            var findAdminFcmToken3 = await customerSchema.find({ mobileNo: AdminNumber3 }).select('fcmToken -_id');
+            var findAdminFcmToken4 = await customerSchema.find({ mobileNo: AdminNumber4 }).select('fcmToken -_id');
+            var findAdminFcmToken5 = await customerSchema.find({ mobileNo: AdminNumber5 }).select('fcmToken -_id');
 
-    let admin1FcmIs = findAdminFcmToken[0].fcmToken == null ? "" : findAdminFcmToken[0].fcmToken;
-    let admin2FcmIs = findAdminFcmToken2[0].fcmToken == null ? "" : findAdminFcmToken2[0].fcmToken;
-    let admin3FcmIs = findAdminFcmToken3[0].fcmToken == null ? "" : findAdminFcmToken3[0].fcmToken;
-    let admin4FcmIs = findAdminFcmToken4[0].fcmToken == null ? "" : findAdminFcmToken4[0].fcmToken;
-    let admin5FcmIs = findAdminFcmToken5[0].fcmToken == null ? "" : findAdminFcmToken5[0].fcmToken;
+            let admin1FcmIs = findAdminFcmToken[0].fcmToken == null ? "" : findAdminFcmToken[0].fcmToken;
+            let admin2FcmIs = findAdminFcmToken2[0].fcmToken == null ? "" : findAdminFcmToken2[0].fcmToken;
+            let admin3FcmIs = findAdminFcmToken3[0].fcmToken == null ? "" : findAdminFcmToken3[0].fcmToken;
+            let admin4FcmIs = findAdminFcmToken4[0].fcmToken == null ? "" : findAdminFcmToken4[0].fcmToken;
+            let admin5FcmIs = findAdminFcmToken5[0].fcmToken == null ? "" : findAdminFcmToken5[0].fcmToken;
 
-    // var AdminFcmToken = [findAdminFcmToken[0].fcmToken,findAdminFcmToken2[0].fcmToken,findAdminFcmToken3[0].fcmToken,findAdminFcmToken4[0].fcmToken,findAdminFcmToken5[0].fcmToken];
-    var AdminFcmToken = [admin1FcmIs, admin2FcmIs , admin3FcmIs , admin4FcmIs , admin5FcmIs];
-    console.log("-------------------------ADMINS TOKENS-----------------------------");
-    console.log(AdminFcmToken);
+            // var AdminFcmToken = [findAdminFcmToken[0].fcmToken,findAdminFcmToken2[0].fcmToken,findAdminFcmToken3[0].fcmToken,findAdminFcmToken4[0].fcmToken,findAdminFcmToken5[0].fcmToken];
+            var AdminFcmToken = [admin1FcmIs, admin2FcmIs , admin3FcmIs , admin4FcmIs , admin5FcmIs];
+            console.log("-------------------------ADMINS TOKENS-----------------------------");
+            console.log(AdminFcmToken);
 
-    let newOrderData = newOrder.orderNo;
-    let newOrderPickUp = newOrder.pickupPoint.address;
-    let newOrderDelivery = newOrder.deliveryPoint.address;
-    let newOrderCustomerId = newOrder.customerId;
-    console.log(newOrderCustomerId);
-    let newOrderCustomer = await customerSchema.find({ _id: newOrderCustomerId }).select('name mobileNo -_id');
-    
-    var newOrderNotification = `New Order Received 
-    OrderID: ${newOrderData}
-    Customer: ${newOrderCustomer[0].name}
-    Mobile: ${newOrderCustomer[0].mobileNo}  
-    PickUp: ${newOrderPickUp}`;
-    console.log(newOrderNotification);
-
-
-    var AdminPhoneNumbers = [AdminNumber1,AdminNumber2,AdminNumber3,AdminNumber4,AdminNumber5];
-            // var payload2 = {
-            //     notification: {
-            //         title: "Order Alert",
-            //         body: "New Order Alert Found For You.",
-            //     },
-            //     data: {
-            //         sound: "surprise.mp3",
-            //         Message: "Hello New Order",
-            //         click_action: "FLUTTER_NOTIFICATION_CLICK",
-            //     },
-            // };
-            // var options2 = {
-            //     priority: "high",
-            //     timeToLive: 60 * 60 * 24,
-            // };
-            // config.firebase
-            //     .messaging()
-            //     .sendToDevice(AdminFcmToken, payload2, options2)
-            //     .then((doc) => {
-            //         console.log("Sending Notification Testing3.......!!!");
-            //         console.log(doc);
-            //     });
-            // config.firebase
-            // .messaging()
-            // .sendToDevice(AdminFcmToken, payload2, options2)
-            // .then((doc) => {                    
-            //     console.log("Sending Notification Testing2.......!!!");
-            //     console.log(doc);
-            // });    
-            // orderstatus[0]["isActive"] == true &&
-            // orderstatus[0]["status"] == "Order Processing"
-
-            //Send notification to Admin FCM
+            let newOrderData = newOrder.orderNo;
+            let newOrderPickUp = newOrder.pickupPoint.address;
+            let newOrderDelivery = newOrder.deliveryPoint.address;
+            let newOrderCustomerId = newOrder.customerId;
+            console.log(newOrderCustomerId);
+            let newOrderCustomer = await customerSchema.find({ _id: newOrderCustomerId }).select('name mobileNo -_id');
             
-            //Sending FCM Notification to Admin
-            console.log(AdminFcmToken.length);
-        for(let i=0;i<AdminFcmToken.length;i++){
-            console.log(`--------------------------------------- ${i}`);
-            console.log(AdminFcmToken[i])
-            var dataSendToAdmin = {
-                "to":AdminFcmToken[i],
-                "priority":"high",
-                "content_available":true,
-                "data": {
-                    "sound": "surprise.mp3",
-                    "click_action": "FLUTTER_NOTIFICATION_CLICK"
-                },
-                "notification":{
-                            "body": newOrderNotification,
-                            "title":"New Order Received",
-                            "badge":1
-                        }
-            };
-    
-            var options2 = {
-                'method': 'POST',
-                'url': 'https://fcm.googleapis.com/fcm/send',
-                'headers': {
-                    'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(dataSendToAdmin)
-            };
-            request(options2, function (error, response , body) {
-                console.log("--------------------Sender--------------------");
-                let myJsonBody = JSON.stringify(body);
-                //console.log(myJsonBody);
-                //myJsonBody[51] USED TO ACCESS RESPONSE DATA SUCCESS FIELD
-                console.log(myJsonBody[51]);
-                if(myJsonBody[51]==0){
-                    console.log("Send Text notification of new order..........!!!");
-                    // sendMessages(AdminPhoneNumbers[i],newOrderNotification);
-                }
-                if (error) {
-                    console.log(error.message);
-                } else {
-                    console.log("Sending Notification Testing....!!!");
-                    console.log(response.body);
-                    if(response.body.success=="1"){
-                        console.log("Send Text notification of new order..........!!!");
-                        // sendMessages(AdminPhoneNumbers[i],newOrderNotification);
-                    }
-                }
-            });
-        }
+            var newOrderNotification = `New Order Received 
+            OrderID: ${newOrderData}
+            Customer: ${newOrderCustomer[0].name}
+            Mobile: ${newOrderCustomer[0].mobileNo}  
+            PickUp: ${newOrderPickUp}`;
+            console.log(newOrderNotification);
 
-    console.log("After sending notification");
+
+            var AdminPhoneNumbers = [AdminNumber1,AdminNumber2,AdminNumber3,AdminNumber4,AdminNumber5];
+                    // var payload2 = {
+                    //     notification: {
+                    //         title: "Order Alert",
+                    //         body: "New Order Alert Found For You.",
+                    //     },
+                    //     data: {
+                    //         sound: "surprise.mp3",
+                    //         Message: "Hello New Order",
+                    //         click_action: "FLUTTER_NOTIFICATION_CLICK",
+                    //     },
+                    // };
+                    // var options2 = {
+                    //     priority: "high",
+                    //     timeToLive: 60 * 60 * 24,
+                    // };
+                    // config.firebase
+                    //     .messaging()
+                    //     .sendToDevice(AdminFcmToken, payload2, options2)
+                    //     .then((doc) => {
+                    //         console.log("Sending Notification Testing3.......!!!");
+                    //         console.log(doc);
+                    //     });
+                    // config.firebase
+                    // .messaging()
+                    // .sendToDevice(AdminFcmToken, payload2, options2)
+                    // .then((doc) => {                    
+                    //     console.log("Sending Notification Testing2.......!!!");
+                    //     console.log(doc);
+                    // });    
+                    // orderstatus[0]["isActive"] == true &&
+                    // orderstatus[0]["status"] == "Order Processing"
+
+                    //Send notification to Admin FCM
+                    
+                    //Sending FCM Notification to Admin
+                    console.log(AdminFcmToken.length);
+                for(let i=0;i<AdminFcmToken.length;i++){
+                    console.log(`--------------------------------------- ${i}`);
+                    console.log(AdminFcmToken[i])
+                    var dataSendToAdmin = {
+                        "to":AdminFcmToken[i],
+                        "priority":"high",
+                        "content_available":true,
+                        "data": {
+                            "sound": "surprise.mp3",
+                            "click_action": "FLUTTER_NOTIFICATION_CLICK"
+                        },
+                        "notification":{
+                                    "body": newOrderNotification,
+                                    "title":"New Order Received",
+                                    "badge":1
+                                }
+                    };
+            
+                    var options2 = {
+                        'method': 'POST',
+                        'url': 'https://fcm.googleapis.com/fcm/send',
+                        'headers': {
+                            'authorization': 'key=AAAAb8BaOXA:APA91bGPf4oQWUscZcjXnuyIJhEQ_bcb6pifUozs9mjrEyNWJcyut7zudpYLBtXGGDU4uopV8dnIjCOyapZToJ1QxPZVBDBSbhP_wxhriQ7kFBlHN1_HVTRtClUla0XSKGVreSgsbgjH',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataSendToAdmin)
+                    };
+                    request(options2, function (error, response , body) {
+                        console.log("--------------------Sender--------------------");
+                        let myJsonBody = JSON.stringify(body);
+                        //console.log(myJsonBody);
+                        //myJsonBody[51] USED TO ACCESS RESPONSE DATA SUCCESS FIELD
+                        console.log(myJsonBody[51]);
+                        if(myJsonBody[51]==0){
+                            console.log("Send Text notification of new order..........!!!");
+                            // sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                        }
+                        if (error) {
+                            console.log(error.message);
+                        } else {
+                            console.log("Sending Notification Testing....!!!");
+                            console.log(response.body);
+                            if(response.body.success=="1"){
+                                console.log("Send Text notification of new order..........!!!");
+                                // sendMessages(AdminPhoneNumbers[i],newOrderNotification);
+                            }
+                        }
+                    });
+                }
+
+            console.log("After sending notification");
     
-    // FCM notification End
+            // FCM notification End
 
             // New Code 03-09-2020
             var payload = {
